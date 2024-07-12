@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 project(GameRenderer VERSION 1.0.0 LANGUAGES CXX)
 
-add_library(GRenderer "src/Window.cpp")
+add_library(GRenderer "src/Context.cpp")
 set(GLFW_LIBRARY_TYPE STATIC)
 set(GLFW_BUILD_SHARED_LIBS OFF)
 
@@ -14,6 +14,7 @@ add_subdirectory("glfw-3.4")
 add_subdirectory("glm")
 
 target_link_libraries(GRenderer PUBLIC glew_s glfw glm)
+target_include_directories(GRenderer PUBLIC "include")
 
 add_subdirectory(Tests)
 
