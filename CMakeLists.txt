@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 
 project(GameRenderer VERSION 1.0.0 LANGUAGES CXX)
 
-add_library(GRenderer "src/Context.cpp")
+add_library(GRenderer "src/Context.cpp" "src/ShaderProgram.cpp" "src/Renderer.cpp")
 set(GLFW_LIBRARY_TYPE STATIC)
 set(GLFW_BUILD_SHARED_LIBS OFF)
 
