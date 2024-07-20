@@ -11,9 +11,7 @@ namespace DK
 
 		if (!fill)
 		{
-			renderLine(vertices[0], vertices[1], color, strokeWidth);
-			renderLine(vertices[0], vertices[2], color, strokeWidth);
-			renderLine(vertices[1], vertices[2], color, strokeWidth);
+			renderLineLoop({vertices[0], vertices[1], vertices[2]}, color, strokeWidth, LINE_ENDS_BAD);
 			return;
 		}
 
@@ -23,20 +21,7 @@ namespace DK
 		unsigned int vb;
 		glCreateBuffers(1, &vb);
 
-		unsigned int eb;
-		glCreateBuffers(1, &eb);
-
-		unsigned char eBuff[3] = { 0,1,2 };
-		glNamedBufferData(eb, sizeof(unsigned char) * 3, eBuff, GL_STATIC_DRAW);
-		glVertexArrayElementBuffer(vao, eb);
-
-		float vBuff[6]{};
-		for (unsigned char i = 0; i < 3; i++)
-		{
-			vBuff[i * 2] = vertices[i].x;
-			vBuff[i * 2 + 1] = vertices[i].y;
-		}
-		glNamedBufferData(vb, sizeof(float) * 6, vBuff, GL_STATIC_DRAW);
+		glNamedBufferData(vb, sizeof(float) * 6, vertices.data(), GL_STATIC_DRAW);
 		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
 		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
 		glVertexArrayAttribBinding(vao, 0, 0);
@@ -53,10 +38,9 @@ namespace DK
 		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
 
 		glBindVertexArray(vao);
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_BYTE, nullptr);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glDeleteBuffers(1, &vb);
-		glDeleteBuffers(1, &eb);
 		glDeleteVertexArrays(1, &vao);
 	}
 	void renderTriangle(const std::array<glm::vec2, 3>& vertices, Color3 color, bool fill, float strokeWidth)
@@ -72,16 +56,16 @@ namespace DK
 		renderTriangle({ p1, p2, p3 }, color, fill, strokeWidth);
 	}
 
-	void renderQuad(const std::array<glm::vec2, 4>& vertices, Color4 color, bool fill, float strokeWidth)
+	void renderTriangles(const std::vector<std::array<glm::vec2, 3>>& triangles, Color4 color, bool fill, float strokeWidth)
 	{
 		if (!Context::s_CurrentContext) return;
 
 		if (!fill)
 		{
-			renderLine(vertices[0], vertices[1], color, strokeWidth);
-			renderLine(vertices[1], vertices[3], color, strokeWidth);
-			renderLine(vertices[2], vertices[3], color, strokeWidth);
-			renderLine(vertices[2], vertices[0], color, strokeWidth);
+			for (const std::array<glm::vec2, 3>& vertices : triangles)
+			{
+				renderLineLoop(std::vector<glm::vec2>(vertices.begin(), vertices.end()), color, strokeWidth, LINE_ENDS_BAD);
+			}
 			return;
 		}
 
@@ -91,20 +75,7 @@ namespace DK
 		unsigned int vb;
 		glCreateBuffers(1, &vb);
 
-		unsigned int eb;
-		glCreateBuffers(1, &eb);
-
-		unsigned char eBuff[6] = { 0,1,2, 1,2,3 };
-		glNamedBufferData(eb, sizeof(unsigned char) * 6, eBuff, GL_STATIC_DRAW);
-		glVertexArrayElementBuffer(vao, eb);
-
-		float vBuff[8]{};
-		for (unsigned char i = 0; i < 4; i++)
-		{
-			vBuff[i * 2] = vertices[i].x;
-			vBuff[i * 2 + 1] = vertices[i].y;
-		}
-		glNamedBufferData(vb, sizeof(float) * 8, vBuff, GL_STATIC_DRAW);
+		glNamedBufferData(vb, sizeof(float) * triangles.size() * 6, triangles.data(), GL_STATIC_DRAW);
 		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
 		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
 		glVertexArrayAttribBinding(vao, 0, 0);
@@ -121,10 +92,97 @@ namespace DK
 		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
 
 		glBindVertexArray(vao);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, nullptr);
+		glDrawArrays(GL_TRIANGLES, 0, triangles.size() * 3);
 
 		glDeleteBuffers(1, &vb);
-		glDeleteBuffers(1, &eb);
+		glDeleteVertexArrays(1, &vao);
+	}
+	void renderTriangles(const std::vector<std::array<glm::vec2, 3>>& triangles, Color3 color, bool fill, float strokeWidth)
+	{
+		renderTriangles(triangles, Color4(color, 1.0F), fill, strokeWidth);
+	}
+	void renderTriangleFan(const std::vector<glm::vec2>& vertices, Color4 color, bool fill, float strokeWidth)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!fill)
+		{
+			for (unsigned int i = 2; i < vertices.size(); i++)
+			{
+				renderLineLoop({ vertices[0], vertices[i], vertices[i - 1] }, color, strokeWidth, LINE_ENDS_BAD);
+			}
+			return;
+		}
+
+		unsigned int vao;
+		glCreateVertexArrays(1, &vao);
+
+		unsigned int vb;
+		glCreateBuffers(1, &vb);
+
+		glNamedBufferData(vb, sizeof(float) * vertices.size() * 2, vertices.data(), GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glBindVertexArray(vao);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size());
+
+		glDeleteBuffers(1, &vb);
+		glDeleteVertexArrays(1, &vao);
+	}
+	void renderTriangleFan(const std::vector<glm::vec2>& vertices, Color3 color, bool fill, float strokeWidth)
+	{
+		renderTriangleFan(vertices, Color4(color, 1.0F), fill, strokeWidth);
+	}
+
+	void renderQuad(const std::array<glm::vec2, 4>& vertices, Color4 color, bool fill, float strokeWidth)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!fill)
+		{
+			renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, LINE_ENDS_BAD);
+			return;
+		}
+
+		unsigned int vao;
+		glCreateVertexArrays(1, &vao);
+
+		unsigned int vb;
+		glCreateBuffers(1, &vb);
+
+		glNamedBufferData(vb, sizeof(float) * 8, vertices.data(), GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glBindVertexArray(vao);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
 	void renderQuad(const std::array<glm::vec2, 4>& vertices, Color3 color, bool fill, float strokeWidth)
@@ -140,34 +198,16 @@ namespace DK
 		renderQuad({ p1, p2, p3, p4 }, Color4(color, 1.0F), fill, strokeWidth);
 	}
 
-	/* after the first two points. every other point must use the previous point to be a triangle in the polygon you want. */
-	void renderPoly(const std::vector<glm::vec2>& vertices, Color4 color, bool fill, float strokeWidth)
+	void renderQuads(const std::vector<std::array<glm::vec2, 4>>& quads, Color4 color, bool fill, float strokeWidth)
 	{
 		if (!Context::s_CurrentContext) return;
 
 		if (!fill)
 		{
-			if (vertices.size() > 3)
+			for (const std::array<glm::vec2, 4>& vertices : quads)
 			{
-				const unsigned int limit = vertices.size() - 2;
-				unsigned int lastA = 3, lastB = 2;
-				for (unsigned int i = 1; i < limit; i += 2)
-				{
-					renderLine(vertices[i], vertices[i + 2], color, strokeWidth);
-					lastA = i + 2;
-				}
-				for (unsigned int i = 0; i < limit; i += 2)
-				{
-					renderLine(vertices[i], vertices[i + 2], color, strokeWidth);
-					lastB = i + 2;
-				}
-				renderLine(vertices[0], vertices[1], color, strokeWidth);
-				renderLine(vertices[lastA], vertices[lastB], color, strokeWidth);
-				return;
+				renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, LINE_ENDS_BAD);
 			}
-			renderLine(vertices[0], vertices[1], color, strokeWidth);
-			renderLine(vertices[0], vertices[2], color, strokeWidth);
-			renderLine(vertices[1], vertices[2], color, strokeWidth);
 			return;
 		}
 
@@ -177,22 +217,92 @@ namespace DK
 		unsigned int vb;
 		glCreateBuffers(1, &vb);
 
+		glNamedBufferData(vb, sizeof(float) * 8 * quads.size(), quads.data(), GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
 		unsigned int eb;
 		glCreateBuffers(1, &eb);
 
-		unsigned short triangles = vertices.size() - 2;
-
-		unsigned short* eBuff = (unsigned short*) _alloca(sizeof(unsigned short) * 3 * triangles);
-
-		for (unsigned short i = 0; i < triangles; i++)
+		unsigned int* eBuff = (unsigned int*)_alloca(sizeof(unsigned int) * 6 * quads.size());
+		for (unsigned int i = 0; i < quads.size(); i++)
 		{
-			eBuff[i * 3] = i;
-			eBuff[i * 3 + 1] = 1 + i;
-			eBuff[i * 3 + 2] = 2 + i;
+			unsigned int i6 = i * 6, i4 = i * 4;
+			eBuff[i6] = i4;
+			eBuff[i6+1] = i4+1;
+			eBuff[i6+2] = i4+2;
+			eBuff[i6+3] = i4+1;
+			eBuff[i6+4] = i4+2;
+			eBuff[i6+5] = i4+3;
+		}
+		glNamedBufferData(eb, sizeof(unsigned int) * 6 * quads.size(), eBuff, GL_STATIC_DRAW);
+		glVertexArrayElementBuffer(vao, eb);
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
 		}
 
-		glNamedBufferData(eb, sizeof(unsigned short) * 3 * triangles, eBuff, GL_STATIC_DRAW);
-		glVertexArrayElementBuffer(vao, eb);
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glBindVertexArray(vao);
+		glDrawElements(GL_TRIANGLES, quads.size() * 6, GL_UNSIGNED_INT, nullptr);
+
+		glDeleteBuffers(1, &eb);
+		glDeleteBuffers(1, &vb);
+		glDeleteVertexArrays(1, &vao);
+	}
+	void renderQuads(const std::vector<std::array<glm::vec2, 4>>& quads, Color3 color, bool fill, float strokeWidth)
+	{
+		renderQuads(quads, Color4(color, 1.0F), fill, strokeWidth);
+	}
+
+	/* after the first two points. every other point must use the previous point to be a triangle in the polygon you want. */
+	void renderPoly(const std::vector<glm::vec2>& vertices, Color4 color, bool fill, float strokeWidth)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!fill)
+		{
+			std::vector<glm::vec2> v;
+			unsigned int i = 1;
+			while (v.size() != vertices.size())
+			{
+				v.push_back(vertices[i]);
+				if (i % 2 == 1)
+				{
+					if (i + 2 < vertices.size())
+					{
+						i += 2;
+					}
+					else if (i + 1 < vertices.size())
+					{
+						i++;
+					}
+					else
+					{
+						i--;
+					}
+				}
+				else
+				{
+					i -= 2;
+				}
+			}
+			renderLineLoop(v, color, strokeWidth, LINE_ENDS_BAD);
+			return;
+		}
+
+		unsigned int vao;
+		glCreateVertexArrays(1, &vao);
+
+		unsigned int vb;
+		glCreateBuffers(1, &vb);
 
 		glNamedBufferData(vb, sizeof(float) * 2 * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
@@ -211,10 +321,9 @@ namespace DK
 		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
 
 		glBindVertexArray(vao);
-		glDrawElements(GL_TRIANGLES, 3 * triangles, GL_UNSIGNED_SHORT, nullptr);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, vertices.size());
 
 		glDeleteBuffers(1, &vb);
-		glDeleteBuffers(1, &eb);
 		glDeleteVertexArrays(1, &vao);
 	}
 	void renderPoly(const std::vector<glm::vec2>& vertices, Color3 color, bool fill, float strokeWidth)
@@ -222,40 +331,374 @@ namespace DK
 		renderPoly(vertices, Color4(color, 1.0F), fill, strokeWidth);
 	}
 
-	void renderLine(const std::array<glm::vec2, 2>& vertices, Color4 color, float lineWidth)
+	void renderPolys(const std::vector<std::vector<glm::vec2>>& polys, Color4 color, bool fill, float strokeWidth)
 	{
-		glm::vec2 offset = vertices[1] - vertices[0];
+		if (!Context::s_CurrentContext) return;
 
-		float distance = glm::sqrt((offset.x * offset.x) + (offset.y * offset.y));
-
-		if (distance == 0)
+		if (!fill)
 		{
-			throw std::exception("Line must not be a point!");
+			for (const std::vector<glm::vec2>& vertices : polys)
+			{
+				std::vector<glm::vec2> v;
+				unsigned int i = 1;
+				while (v.size() != vertices.size())
+				{
+					v.push_back(vertices[i]);
+					if (i % 2 == 1)
+					{
+						if (i + 2 < vertices.size())
+						{
+							i += 2;
+						}
+						else if (i + 1 < vertices.size())
+						{
+							i++;
+						}
+						else
+						{
+							i--;
+						}
+					}
+					else
+					{
+						i -= 2;
+					}
+				}
+				renderLineLoop(v, color, strokeWidth, LINE_ENDS_BAD);
+			}
+			return;
 		}
 
-		glm::vec2 dir = offset / distance;
+		unsigned int vao;
+		glCreateVertexArrays(1, &vao);
 
-		glm::vec2 lineSloper = glm::vec2(-dir.y, dir.x) * lineWidth / 2.0f;
+		unsigned int vb;
+		glCreateBuffers(1, &vb);
 
-		glm::vec2 p1 = vertices[0] + lineSloper;
-		glm::vec2 p2 = vertices[0] - lineSloper;
+		unsigned int totalPoints = 0;
+		for (unsigned int i = 0; i < polys.size(); i++)
+		{
+			totalPoints += polys[i].size();
+		}
+		float* vBuff = (float*)_alloca(sizeof(float) * 2 * totalPoints);
 
-		glm::vec2 p3 = vertices[1] + lineSloper;
-		glm::vec2 p4 = vertices[1] - lineSloper;
+		for (unsigned int i = 0, n = 0; i < totalPoints; n++)
+		{
+			for (unsigned int j = 0; j < polys[n].size(); j++, i++)
+			{
+				vBuff[i * 2] = polys[n][j].x;
+				vBuff[i * 2 + 1] = polys[n][j].y;
+			}
+		}
 
-		renderQuad(p1, p2, p3, p4, color);
+		glNamedBufferData(vb, sizeof(float) * 2 * totalPoints, vBuff, GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
+		unsigned int eb;
+		glCreateBuffers(1, &eb);
+
+		unsigned int numOfElements = 3 * (totalPoints - 2);
+		unsigned int* eBuff = (unsigned int*) _alloca(sizeof(unsigned int) * numOfElements);
+
+		for (unsigned int i = 0; i + 2 < totalPoints; i++)
+		{
+			eBuff[i * 3] = i;
+			eBuff[i * 3 + 1] = i+1;
+			eBuff[i * 3 + 2] = i+2;
+		}
+
+		glNamedBufferData(eb, sizeof(unsigned int) * numOfElements, eBuff, GL_STATIC_DRAW);
+		glVertexArrayElementBuffer(vao, eb);
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glBindVertexArray(vao);
+		glDrawElements(GL_TRIANGLES, numOfElements, GL_UNSIGNED_INT, nullptr);
+
+		glDeleteBuffers(1, &eb);
+		glDeleteBuffers(1, &vb);
+		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLine(const std::array<glm::vec2, 2>& vertices, Color3 color, float lineWidth)
+	void renderPolys(const std::vector<std::vector<glm::vec2>>& polys, Color3 color, bool fill, float strokeWidth)
 	{
-		renderLine(vertices, Color4(color, 1.0F), lineWidth);
+		renderPolys(polys, Color4(color, 1.0F), fill, strokeWidth);
 	}
-	void renderLine(glm::vec2 p1, glm::vec2 p2, Color4 color, float lineWidth)
+
+	void renderLine(const std::array<glm::vec2, 2>& vertices, Color4 color, float lineWidth, unsigned char lineType)
 	{
-		renderLine({ p1, p2 }, color, lineWidth);
+		if (lineType == LINE_ENDS_GOOD)
+		{
+			glm::vec2 offset = vertices[1] - vertices[0];
+
+			float distance = glm::sqrt((offset.x * offset.x) + (offset.y * offset.y));
+
+			if (distance == 0)
+			{
+				throw std::exception("Line must not be a point!");
+			}
+
+			glm::vec2 dir = offset / distance;
+
+			glm::vec2 lineSloper = glm::vec2(-dir.y, dir.x) * lineWidth / 2.0f;
+
+			glm::vec2 p1 = vertices[0] + lineSloper;
+			glm::vec2 p2 = vertices[0] - lineSloper;
+
+			glm::vec2 p3 = vertices[1] + lineSloper;
+			glm::vec2 p4 = vertices[1] - lineSloper;
+
+			renderQuad(p1, p2, p3, p4, color);
+			return;
+		}
+		if (!Context::s_CurrentContext) return;
+
+		unsigned int vao;
+		glCreateVertexArrays(1, &vao);
+
+		unsigned int vb;
+		glCreateBuffers(1, &vb);
+
+		glNamedBufferData(vb, sizeof(float) * 4, vertices.data(), GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glLineWidth(lineWidth);
+		glBindVertexArray(vao);
+		glDrawArrays(GL_LINES, 0, 2);
+
+		glDeleteBuffers(1, &vb);
+		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLine(glm::vec2 p1, glm::vec2 p2, Color3 color, float lineWidth)
+	void renderLine(const std::array<glm::vec2, 2>& vertices, Color3 color, float lineWidth, unsigned char lineType)
 	{
-		renderLine({ p1, p2 }, Color4(color, 1.0F), lineWidth);
+		renderLine(vertices, Color4(color, 1.0F), lineWidth, lineType);
+	}
+	void renderLine(glm::vec2 p1, glm::vec2 p2, Color4 color, float lineWidth, unsigned char lineType)
+	{
+		renderLine({ p1, p2 }, color, lineWidth, lineType);
+	}
+	void renderLine(glm::vec2 p1, glm::vec2 p2, Color3 color, float lineWidth, unsigned char lineType)
+	{
+		renderLine({ p1, p2 }, Color4(color, 1.0F), lineWidth, lineType);
+	}
+
+	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, unsigned char lineType)
+	{
+		if (lineType == LINE_ENDS_GOOD)
+		{
+			for (unsigned int i = 1; i < vertices.size(); i++)
+			{
+				glm::vec2 offset = vertices[i] - vertices[i-1];
+
+				float distance = glm::sqrt((offset.x * offset.x) + (offset.y * offset.y));
+
+				if (distance == 0)
+				{
+					throw std::exception("Line must not be a point!");
+				}
+
+				glm::vec2 dir = offset / distance;
+
+				glm::vec2 lineSloper = glm::vec2(-dir.y, dir.x) * lineWidth / 2.0f;
+
+				glm::vec2 p1 = vertices[i-1] + lineSloper;
+				glm::vec2 p2 = vertices[i-1] - lineSloper;
+
+				glm::vec2 p3 = vertices[i] + lineSloper;
+				glm::vec2 p4 = vertices[i] - lineSloper;
+
+				renderQuad(p1, p2, p3, p4, color);
+			}
+			return;
+		}
+		if (!Context::s_CurrentContext) return;
+
+		unsigned int vao;
+		glCreateVertexArrays(1, &vao);
+
+		unsigned int vb;
+		glCreateBuffers(1, &vb);
+
+		glNamedBufferData(vb, sizeof(float) * vertices.size() * 2, vertices.data(), GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glLineWidth(lineWidth);
+		glBindVertexArray(vao);
+		glDrawArrays(GL_LINE_STRIP, 0, vertices.size());
+
+		glDeleteBuffers(1, &vb);
+		glDeleteVertexArrays(1, &vao);
+	}
+	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, unsigned char lineType)
+	{
+		renderLineStrip(vertices, Color4(color, 1.0F), lineWidth, lineType);
+	}
+	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, unsigned char lineType)
+	{
+		if (lineType == LINE_ENDS_GOOD)
+		{
+			for (unsigned int i = 1; i < vertices.size(); i++)
+			{
+				glm::vec2 offset = vertices[i] - vertices[i - 1];
+
+				float distance = glm::sqrt((offset.x * offset.x) + (offset.y * offset.y));
+
+				if (distance == 0)
+				{
+					throw std::exception("Line must not be a point!");
+				}
+
+				glm::vec2 dir = offset / distance;
+
+				glm::vec2 lineSloper = glm::vec2(-dir.y, dir.x) * lineWidth / 2.0f;
+
+				glm::vec2 p1 = vertices[i - 1] + lineSloper;
+				glm::vec2 p2 = vertices[i - 1] - lineSloper;
+
+				glm::vec2 p3 = vertices[i] + lineSloper;
+				glm::vec2 p4 = vertices[i] - lineSloper;
+
+				renderQuad(p1, p2, p3, p4, color);
+			}
+			glm::vec2 offset = vertices[0] - vertices[vertices.size() - 1];
+
+			float distance = glm::sqrt((offset.x * offset.x) + (offset.y * offset.y));
+
+			if (distance == 0)
+			{
+				throw std::exception("Line must not be a point!");
+			}
+
+			glm::vec2 dir = offset / distance;
+
+			glm::vec2 lineSloper = glm::vec2(-dir.y, dir.x) * lineWidth / 2.0f;
+
+			glm::vec2 p1 = vertices[vertices.size() - 1] + lineSloper;
+			glm::vec2 p2 = vertices[vertices.size() - 1] - lineSloper;
+
+			glm::vec2 p3 = vertices[0] + lineSloper;
+			glm::vec2 p4 = vertices[0] - lineSloper;
+
+			renderQuad(p1, p2, p3, p4, color);
+			return;
+		}
+		if (!Context::s_CurrentContext) return;
+
+		unsigned int vao;
+		glCreateVertexArrays(1, &vao);
+
+		unsigned int vb;
+		glCreateBuffers(1, &vb);
+
+		auto d = vertices.data();
+		glNamedBufferData(vb, sizeof(float) * vertices.size() * 2, d, GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glLineWidth(lineWidth);
+		glBindVertexArray(vao);
+		glDrawArrays(GL_LINE_LOOP, 0, vertices.size());
+
+		glDeleteBuffers(1, &vb);
+		glDeleteVertexArrays(1, &vao);
+	}
+	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, unsigned char lineType)
+	{
+		renderLineLoop(vertices, Color4(color, 1.0F), lineWidth, lineType);
+	}
+
+	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color4 color, float lineWidth, unsigned char lineType)
+	{
+		if (lineType == LINE_ENDS_GOOD)
+		{
+			for (const std::array<glm::vec2, 2>& line : lines)
+			{
+				renderLine(line, color, lineWidth, lineType);
+			}
+			return;
+		}
+		if (!Context::s_CurrentContext) return;
+
+		unsigned int vao;
+		glCreateVertexArrays(1, &vao);
+
+		unsigned int vb;
+		glCreateBuffers(1, &vb);
+
+		glNamedBufferData(vb, sizeof(float) * lines.size() * 4, lines.data(), GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glLineWidth(lineWidth);
+		glBindVertexArray(vao);
+		glDrawArrays(GL_LINES, 0, lines.size() * 2);
+
+		glDeleteBuffers(1, &vb);
+		glDeleteVertexArrays(1, &vao);
+	}
+	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color3 color, float lineWidth, unsigned char lineType)
+	{
+		renderLines(lines, Color4(color, 1.0F), lineWidth, lineType);
 	}
 
 	void renderCircle(glm::vec2 point, float radius, Color4 color, bool fill, float strokeWidth)
@@ -265,29 +708,44 @@ namespace DK
 		unsigned int vao;
 		glCreateVertexArrays(1, &vao);
 
-		unsigned int vb;
-		glCreateBuffers(1, &vb);
-
-		unsigned int eb;
-		glCreateBuffers(1, &eb);
-
-		unsigned char eBuff[3]{ 0,1,2 };
-
-		glNamedBufferData(eb, sizeof(unsigned char) * 3, eBuff, GL_STATIC_DRAW);
-		glVertexArrayElementBuffer(vao, eb);
-
-		float pos[6]
+		float outerRadius = radius, innerRadius = 0;
+		if (!fill)
 		{
-			point.x - radius * 2.5F, point.y - radius * 2.5F,
-			point.x + radius * 2.5F, point.y - radius * 2.5F,
-			point.x, point.y + radius * 2.5F
+			outerRadius += 0.5F * strokeWidth;
+			innerRadius = radius - 0.5F * strokeWidth;
+		}
+
+		float buffer[30] {
+			point.x - radius * 2.5F, point.y - radius * 2.5F, outerRadius, innerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+			point.x + radius * 2.5F, point.y - radius * 2.5F, outerRadius, innerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+			point.x, point.y + radius * 2.5F, outerRadius, innerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
 		};
 
-		glNamedBufferData(vb, sizeof(float) * 6, pos, GL_STATIC_DRAW);
-		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+		unsigned int VB;
+		glCreateBuffers(1, &VB);
+
+		glNamedBufferData(VB, sizeof(float) * 30, buffer, GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, VB, 0, sizeof(float) * 10);
+
 		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
 		glVertexArrayAttribBinding(vao, 0, 0);
 		glEnableVertexArrayAttrib(vao, 0);
+
+		glVertexArrayAttribFormat(vao, 1, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 2);
+		glVertexArrayAttribBinding(vao, 1, 0);
+		glEnableVertexArrayAttrib(vao, 1);
+
+		glVertexArrayAttribFormat(vao, 2, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 3);
+		glVertexArrayAttribBinding(vao, 2, 0);
+		glEnableVertexArrayAttrib(vao, 2);
+
+		glVertexArrayAttribFormat(vao, 3, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4);
+		glVertexArrayAttribBinding(vao, 3, 0);
+		glEnableVertexArrayAttrib(vao, 3);
+
+		glVertexArrayAttribFormat(vao, 4, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8);
+		glVertexArrayAttribBinding(vao, 4, 0);
+		glEnableVertexArrayAttrib(vao, 4);
 
 		if (!Program::colorCircleRenderer.isInitialized())
 		{
@@ -295,28 +753,12 @@ namespace DK
 		}
 
 		Program::colorCircleRenderer.use();
-		Program::colorCircleRenderer.uni4f("uColor", color);
-
-		if (fill)
-		{
-			Program::colorCircleRenderer.uni1f("uOuterRadius", radius);
-			Program::colorCircleRenderer.uni1f("uInnerRadius", 0);
-		}
-		else
-		{
-			Program::colorCircleRenderer.uni1f("uOuterRadius", radius + 0.5F * strokeWidth);
-			Program::colorCircleRenderer.uni1f("uInnerRadius", radius - 0.5F * strokeWidth);
-		}
-
-		Program::colorCircleRenderer.uni2f("uPoint", point);
-
 		Program::colorCircleRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
 
 		glBindVertexArray(vao);
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_BYTE, nullptr);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		glDeleteBuffers(1, &vb);
-		glDeleteBuffers(1, &eb);
+		glDeleteBuffers(1, &VB);
 		glDeleteVertexArrays(1, &vao);
 	}
 	void renderCircle(glm::vec2 point, float radius, Color3 color, bool fill, float strokeWidth)
@@ -324,36 +766,57 @@ namespace DK
 		renderCircle(point, radius, Color4(color, 1.0F), fill, strokeWidth);
 	}
 
-	void renderRing(glm::vec2 point, float outerRadius, float innerRadius, Color4 color, bool fill, float strokeWidth)
+	void renderCircles(const std::vector<glm::vec2>& points, const std::vector<float>& radii, Color4 color, bool fill, float strokeWidth)
 	{
 		if (!Context::s_CurrentContext) return;
 
 		unsigned int vao;
 		glCreateVertexArrays(1, &vao);
 
-		unsigned int vb;
-		glCreateBuffers(1, &vb);
+		float* buffer = (float*)_alloca(sizeof(float) * 30 * points.size());
 
-		unsigned int eb;
-		glCreateBuffers(1, &eb);
-
-		unsigned char eBuff[3]{ 0,1,2 };
-
-		glNamedBufferData(eb, sizeof(unsigned char) * 3, eBuff, GL_STATIC_DRAW);
-		glVertexArrayElementBuffer(vao, eb);
-
-		float pos[6]
+		for (unsigned int i = 0; i < points.size(); i++)
 		{
-			point.x - outerRadius * 2.5F, point.y - outerRadius * 2.5F,
-			point.x + outerRadius * 2.5F, point.y - outerRadius * 2.5F,
-			point.x, point.y + outerRadius * 2.5F
-		};
+			float outerRadius = radii[i], innerRadius = 0;
+			if (!fill)
+			{
+				outerRadius += 0.5F * strokeWidth;
+				innerRadius = radii[i] - 0.5F * strokeWidth;
+			}
 
-		glNamedBufferData(vb, sizeof(float) * 6, pos, GL_STATIC_DRAW);
-		glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 2);
+			float b[30]{
+				points[i].x - radii[i] * 2.5F, points[i].y - radii[i] * 2.5F, outerRadius, innerRadius, color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+				points[i].x + radii[i] * 2.5F, points[i].y - radii[i] * 2.5F, outerRadius, innerRadius, color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+				points[i].x, points[i].y + radii[i] * 2.5F, outerRadius, innerRadius, color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+			};
+			memcpy(buffer + i * 30, b, sizeof(float) * 30);
+		}
+		
+		unsigned int VB;
+		glCreateBuffers(1, &VB);
+
+		glNamedBufferData(VB, sizeof(float) * 30 * points.size(), buffer, GL_STATIC_DRAW);
+		glVertexArrayVertexBuffer(vao, 0, VB, 0, sizeof(float) * 10);
+
 		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
 		glVertexArrayAttribBinding(vao, 0, 0);
 		glEnableVertexArrayAttrib(vao, 0);
+
+		glVertexArrayAttribFormat(vao, 1, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 2);
+		glVertexArrayAttribBinding(vao, 1, 0);
+		glEnableVertexArrayAttrib(vao, 1);
+
+		glVertexArrayAttribFormat(vao, 2, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 3);
+		glVertexArrayAttribBinding(vao, 2, 0);
+		glEnableVertexArrayAttrib(vao, 2);
+
+		glVertexArrayAttribFormat(vao, 3, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4);
+		glVertexArrayAttribBinding(vao, 3, 0);
+		glEnableVertexArrayAttrib(vao, 3);
+
+		glVertexArrayAttribFormat(vao, 4, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8);
+		glVertexArrayAttribBinding(vao, 4, 0);
+		glEnableVertexArrayAttrib(vao, 4);
 
 		if (!Program::colorCircleRenderer.isInitialized())
 		{
@@ -361,40 +824,215 @@ namespace DK
 		}
 
 		Program::colorCircleRenderer.use();
-		Program::colorCircleRenderer.uni4f("uColor", color);
-
-		if (fill)
-		{
-			Program::colorCircleRenderer.uni1f("uOuterRadius", outerRadius);
-			Program::colorCircleRenderer.uni1f("uInnerRadius", innerRadius);
-		}
-		else
-		{
-			Program::colorCircleRenderer.uni1f("uOuterRadius", outerRadius + 0.5F * strokeWidth);
-			Program::colorCircleRenderer.uni1f("uInnerRadius", outerRadius - 0.5F * strokeWidth);
-		}
-
-		Program::colorCircleRenderer.uni2f("uPoint", point);
-
 		Program::colorCircleRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
 
 		glBindVertexArray(vao);
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_BYTE, nullptr);
+		glDrawArrays(GL_TRIANGLES, 0, 3*points.size());
 
-		if (!fill)
+		glDeleteBuffers(1, &VB);
+		glDeleteVertexArrays(1, &vao);
+	}
+	void renderCircles(const std::vector<glm::vec2>& points, const std::vector<float>& radii, Color3 color, bool fill, float strokeWidth)
+	{
+		renderCircles(points, radii, Color4(color, 1.0F), fill, strokeWidth);
+	}
+
+	void renderRing(glm::vec2 point, float outerRadius, float innerRadius, Color4 color, bool fill, float strokeWidth)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		unsigned int vao, vb;
+		glCreateVertexArrays(1, &vao);
+		glCreateBuffers(1, &vb);
+
+		if (fill)
 		{
-			Program::colorCircleRenderer.uni1f("uOuterRadius", innerRadius + 0.5F * strokeWidth);
-			Program::colorCircleRenderer.uni1f("uInnerRadius", innerRadius - 0.5F * strokeWidth);
+			float buffer[30]{
+				point.x - outerRadius * 2.5F, point.y - outerRadius * 2.5F, outerRadius, innerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+				point.x + outerRadius * 2.5F, point.y - outerRadius * 2.5F, outerRadius, innerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+				point.x, point.y + outerRadius * 2.5F, outerRadius, innerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+			};
 
-			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_BYTE, nullptr);
+			glNamedBufferData(vb, sizeof(float) * 30, buffer, GL_STATIC_DRAW);
+			glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 10);
+		}
+		else
+		{
+			float oOuterRadius = outerRadius + 0.5F * strokeWidth, oInnerRadius = outerRadius - 0.5F * strokeWidth;
+			float iOuterRadius = innerRadius + 0.5F * strokeWidth, iInnerRadius = innerRadius - 0.5F * strokeWidth;
+
+			float buffer[60]{
+				point.x - outerRadius * 2.5F, point.y - outerRadius * 2.5F, oOuterRadius, oInnerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+				point.x + outerRadius * 2.5F, point.y - outerRadius * 2.5F, oOuterRadius, oInnerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+				point.x, point.y + outerRadius * 2.5F, oOuterRadius, oInnerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+				point.x - outerRadius * 2.5F, point.y - outerRadius * 2.5F, iOuterRadius, iInnerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+				point.x + outerRadius * 2.5F, point.y - outerRadius * 2.5F, iOuterRadius, iInnerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+				point.x, point.y + outerRadius * 2.5F, iOuterRadius, iInnerRadius, color.r, color.g, color.b, color.a, point.x, point.y,
+			};
+
+			glNamedBufferData(vb, sizeof(float) * 60, buffer, GL_STATIC_DRAW);
+			glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 10);
+		}
+		
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
+		glVertexArrayAttribFormat(vao, 1, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 2);
+		glVertexArrayAttribBinding(vao, 1, 0);
+		glEnableVertexArrayAttrib(vao, 1);
+
+		glVertexArrayAttribFormat(vao, 2, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 3);
+		glVertexArrayAttribBinding(vao, 2, 0);
+		glEnableVertexArrayAttrib(vao, 2);
+
+		glVertexArrayAttribFormat(vao, 3, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4);
+		glVertexArrayAttribBinding(vao, 3, 0);
+		glEnableVertexArrayAttrib(vao, 3);
+
+		glVertexArrayAttribFormat(vao, 4, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8);
+		glVertexArrayAttribBinding(vao, 4, 0);
+		glEnableVertexArrayAttrib(vao, 4);
+
+		if (!Program::colorCircleRenderer.isInitialized())
+		{
+			Program::colorCircleRenderer.initialize(ROOT_DIR "/src/SPrograms/ColorCircle");
 		}
 
+		Program::colorCircleRenderer.use();
+		Program::colorCircleRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glBindVertexArray(vao);
+		if (fill)
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+		else
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+
 		glDeleteBuffers(1, &vb);
-		glDeleteBuffers(1, &eb);
 		glDeleteVertexArrays(1, &vao);
 	}
 	void renderRing(glm::vec2 point, float outerRadius, float innerRadius, Color3 color, bool fill, float strokeWidth)
 	{
 		renderRing(point, outerRadius, innerRadius, Color4(color, 1.0F), fill, strokeWidth);
+	}
+
+	void renderRings(const std::vector<glm::vec2>& points, const std::vector<float>& outerRadii, const std::vector<float>& innerRadii, Color4 color, bool fill, float strokeWidth)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		unsigned int vao, vb;
+		glCreateVertexArrays(1, &vao);
+		glCreateBuffers(1, &vb);
+
+		if (fill)
+		{
+			float* buffer = (float*)_alloca(sizeof(float) * 30 * points.size());
+			for (unsigned int i = 0; i < points.size(); i++)
+			{
+				float b[30]{
+					points[i].x - outerRadii[i] * 2.5F, points[i].y - outerRadii[i] * 2.5F, outerRadii[i], innerRadii[i], color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+					points[i].x + outerRadii[i] * 2.5F, points[i].y - outerRadii[i] * 2.5F, outerRadii[i], innerRadii[i], color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+					points[i].x, points[i].y + outerRadii[i] * 2.5F, outerRadii[i], innerRadii[i], color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+				};
+				memcpy(buffer + i * 30, b, sizeof(float) * 30);
+			}
+
+			glNamedBufferData(vb, sizeof(float) * 30 * points.size(), buffer, GL_STATIC_DRAW);
+			glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 10);
+		}
+		else
+		{
+			float* buffer = (float*)_alloca(sizeof(float) * 60 * points.size());
+			for (unsigned int i = 0; i < points.size(); i++)
+			{
+				float oOuterRadius = outerRadii[i] + 0.5F * strokeWidth, oInnerRadius = outerRadii[i] - 0.5F * strokeWidth;
+				float iOuterRadius = innerRadii[i] + 0.5F * strokeWidth, iInnerRadius = innerRadii[i] - 0.5F * strokeWidth;
+
+				float b[60]{
+					points[i].x - outerRadii[i] * 2.5F, points[i].y - outerRadii[i] * 2.5F, oOuterRadius, oInnerRadius, color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+					points[i].x + outerRadii[i] * 2.5F, points[i].y - outerRadii[i] * 2.5F, oOuterRadius, oInnerRadius, color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+					points[i].x, points[i].y + outerRadii[i] * 2.5F, oOuterRadius, oInnerRadius, color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+					points[i].x - outerRadii[i] * 2.5F, points[i].y - outerRadii[i] * 2.5F, iOuterRadius, iInnerRadius, color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+					points[i].x + outerRadii[i] * 2.5F, points[i].y - outerRadii[i] * 2.5F, iOuterRadius, iInnerRadius, color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+					points[i].x, points[i].y + outerRadii[i] * 2.5F, iOuterRadius, iInnerRadius, color.r, color.g, color.b, color.a, points[i].x, points[i].y,
+				};
+				memcpy(buffer + i * 60, b, sizeof(float) * 60);
+			}
+
+			glNamedBufferData(vb, sizeof(float) * 60 * points.size(), buffer, GL_STATIC_DRAW);
+			glVertexArrayVertexBuffer(vao, 0, vb, 0, sizeof(float) * 10);
+		}
+
+		glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
+		glVertexArrayAttribBinding(vao, 0, 0);
+		glEnableVertexArrayAttrib(vao, 0);
+
+		glVertexArrayAttribFormat(vao, 1, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 2);
+		glVertexArrayAttribBinding(vao, 1, 0);
+		glEnableVertexArrayAttrib(vao, 1);
+
+		glVertexArrayAttribFormat(vao, 2, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 3);
+		glVertexArrayAttribBinding(vao, 2, 0);
+		glEnableVertexArrayAttrib(vao, 2);
+
+		glVertexArrayAttribFormat(vao, 3, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4);
+		glVertexArrayAttribBinding(vao, 3, 0);
+		glEnableVertexArrayAttrib(vao, 3);
+
+		glVertexArrayAttribFormat(vao, 4, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8);
+		glVertexArrayAttribBinding(vao, 4, 0);
+		glEnableVertexArrayAttrib(vao, 4);
+
+		if (!Program::colorCircleRenderer.isInitialized())
+		{
+			Program::colorCircleRenderer.initialize(ROOT_DIR "/src/SPrograms/ColorCircle");
+		}
+
+		Program::colorCircleRenderer.use();
+		Program::colorCircleRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+
+		glBindVertexArray(vao);
+		if (fill)
+			glDrawArrays(GL_TRIANGLES, 0, 3 * points.size());
+		else
+			glDrawArrays(GL_TRIANGLES, 0, 6 * points.size());
+
+		glDeleteBuffers(1, &vb);
+		glDeleteVertexArrays(1, &vao);
+	}
+	void renderRings(const std::vector<glm::vec2>& points, const std::vector<float>& outerRadii, const std::vector<float>& innerRadii, Color3 color, bool fill, float strokeWidth)
+	{
+		renderRings(points, outerRadii, innerRadii, Color4(color, 1.0F), fill, strokeWidth);
+	}
+
+	void renderRegularPoly(glm::vec2 point, float radius, unsigned int nSided, float startAngle, Color4 color, bool fill, float strokeWidth)
+	{
+		double angDiff = glm::radians(360.0 / (double)nSided);
+
+		std::vector<glm::vec2> vertices;
+		if (fill)
+		{
+			vertices.push_back(point);
+		}
+
+		double L = glm::radians(startAngle); // L is a symbol of angle.
+		for (unsigned int i = 0; i < nSided; i++, L+=angDiff)
+		{
+			vertices.push_back(point + (glm::vec2(glm::cos(L), glm::sin(L)) * radius));
+		}
+
+		if (fill)
+		{
+			vertices.push_back(vertices[1]);
+			renderTriangleFan(vertices, color, fill, strokeWidth);
+		}
+		else
+		{
+			renderLineLoop(vertices, color, strokeWidth, LINE_ENDS_BAD);
+		}
+	}
+	void renderRegularPoly(glm::vec2 point, float radius, unsigned int nSided, float startAngle, Color3 color, bool fill, float strokeWidth)
+	{
+		renderRegularPoly(point, radius, nSided, startAngle, Color4(color, 1.0F), fill, strokeWidth);
 	}
 }

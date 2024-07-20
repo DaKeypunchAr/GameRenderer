@@ -42,6 +42,8 @@ namespace DK
 
 		glm::mat4 getProjectionMatrix() const noexcept;
 
+		GLFWwindow* getRawPointer() const noexcept { return m_Window; }
+
 	public:
 		static unsigned short getNumOfAliveContexts() noexcept { return s_TotalContexts; }
 		

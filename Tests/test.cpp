@@ -18,11 +18,45 @@ int main()
 	DK::Context context({ 800u, 800u }, "Test - Game Renderer", hints);
 	context.clearColor(DK::BLACK);
 
+	float nGon = 3;
+	double nGonSpeed = 1;
+
+	bool pause = false;
+	bool fill = false;
+
+	bool wPressed = false, sPressed = false, pPressed = false, fPressed = false;
+
+	double startAngle = 0;
 	while (!context.shouldClose())
 	{
 		context.clearScreen();
+		if (!wPressed && glfwGetKey(context.getRawPointer(), GLFW_KEY_W)) wPressed = true;
+		if (!sPressed && glfwGetKey(context.getRawPointer(), GLFW_KEY_S)) sPressed = true;
+		if (!pPressed && glfwGetKey(context.getRawPointer(), GLFW_KEY_P)) pPressed = true;
+		if (!fPressed && glfwGetKey(context.getRawPointer(), GLFW_KEY_F)) fPressed = true;
 
+		if (wPressed && !glfwGetKey(context.getRawPointer(), GLFW_KEY_W)) nGon++;
+		if (wPressed && !glfwGetKey(context.getRawPointer(), GLFW_KEY_S)) nGon--;
 
+		DK::renderRegularPoly(glm::vec2(400), 300, (unsigned int)nGon, startAngle, DK::PINK, fill, 3.0F);
+
+		if (pPressed && !glfwGetKey(context.getRawPointer(), GLFW_KEY_P))
+		{
+			pPressed = false; pause = !pause;
+		}
+		if (fPressed && !glfwGetKey(context.getRawPointer(), GLFW_KEY_F))
+		{
+			fPressed = false; fill = !fill;
+		}
+
+		if (!pause)
+		{
+			startAngle += nGonSpeed;
+			nGon += 0.1;
+		}
+
+		if (nGon > 25) nGon = 3;
+		if (nGon < 3) nGon = 3;
 		context.swapBuffers();
 		context.pollEvents();
 	}
