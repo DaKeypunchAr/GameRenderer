@@ -1312,4 +1312,14 @@ namespace DK
 	{
 		renderPoly(poly, Color4(color, 1.0F), model);
 	}
+
+
+	void render(const Shape& shape, Color4 color, glm::mat4 model)
+	{
+		switch (shape.getPrimitive())
+		{
+		case Primitive::TRIANGLE:
+			renderTriangle(shape, color, model);
+		}
+	}
 } 

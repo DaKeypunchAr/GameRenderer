@@ -14,6 +14,8 @@ namespace DK
 	/* Shape */
 	Shape::Shape(const std::vector<glm::vec2>& vertices, Primitive primitive)
 		: m_Vertices(vertices), m_Primitive(primitive) {}
+	Shape::Shape(const Shape& shape)
+		: m_Vertices(shape.get()), m_Primitive(shape.getPrimitive()) {}
 	Shape::~Shape()
 	{
 		if (!m_Initialized) return;
@@ -255,6 +257,31 @@ namespace DK
 		m_NeedsUpdate = true;
 	}
 
+	void Quads::update(unsigned int quadIdx, const Quad& quad)
+	{
+		unsigned int vIdx = quadIdx * 4u;
+		if (vIdx + 4u > m_Vertices.size()) throw std::exception("Index out of bounds!");
+
+		m_Vertices[vIdx] = quad[0];
+		m_Vertices[vIdx + 1] = quad[1];
+		m_Vertices[vIdx + 2] = quad[2];
+		m_Vertices[vIdx + 3] = quad[3];
+
+		m_NeedsUpdate = true;
+	}
+	void Quads::update(unsigned int quadIdx, const Quads& quads)
+	{
+		unsigned int vIdx = quadIdx * 4u;
+		if (vIdx + quads.get().size() > m_Vertices.size()) throw std::exception("Index out of bounds!");
+
+		const auto& v = quads.get();
+		for (unsigned int i = vIdx, j = 0; j < quads.get().size(); i++, j++)
+		{
+			m_Vertices[i] = quads[j];
+		}
+		m_NeedsUpdate = true;
+	}
+
 	Quad Quads::getQuadAt(unsigned int quadIdx) const
 	{
 		unsigned int vIdx = quadIdx * 4u;
@@ -315,5 +342,44 @@ namespace DK
 		vertices.push_back(vertices[0]);
 
 		return TriangleFan(glm::vec2(0), vertices);
+	}
+
+	/* Shape - Line */
+	Line::Line(glm::vec2 p1, glm::vec2 p2, float lineWidth)
+		: Shape({ p1, p2 }, Primitive::LINE), m_LineWidth(lineWidth) {}
+	Line::Line(const std::array<glm::vec2, 2>& line, float lineWidth)
+		: Shape(std::vector<glm::vec2>(line.begin(), line.end()), Primitive::LINE), m_LineWidth(lineWidth) {}
+	Line::Line(const Line& line)
+		: Shape(line.get(), Primitive::LINE), m_LineWidth(line.getLineWidth()) {}
+
+	void Line::setLineWidth(float lineWidth) const
+	{
+		m_LineWidth = lineWidth;
+	}
+	float Line::getLineWidth() const
+	{
+		return m_LineWidth;
+	}
+
+	/* Shape - Lines */
+	Lines::Lines(const std::vector<Line>& lines)
+		: Shape({}, Primitive::LINES), m_LineWidths()
+	{
+		add(lines);
+	}
+	Lines::Lines(const std::vector<Lines>& lines)
+		: Shape({}, Primitive::LINES), m_LineWidths()
+	{
+		add(lines);
+	}
+	Lines::Lines(const std::vector<LineStrip>& lineStrips)
+		: Shape({}, Primitive::LINES), m_LineWidths()
+	{
+		add(lineStrips);
+	}
+	Lines::Lines(const std::vector<LineLoop>& lineLoops)
+		: Shape({}, Primitive::LINES), m_LineWidths()
+	{
+		add(lineLoops);
 	}
 }

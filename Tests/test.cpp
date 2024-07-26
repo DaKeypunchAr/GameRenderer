@@ -75,20 +75,21 @@ void testRPolys(const DK::Context& context)
 {
 	static GLFWwindow* rawPtr = context.getRawPointer();
 	static float nGon = 3;
-	static float nGonSpeed = 0.01f;
-	static double nGonAngleSpeed = 1.0;
-	static double startAngle = 0;
+	static float nGonSpeed = 0.07f;
+	static glm::uvec2 nGonLimit(3, 30);
+	static std::vector<DK::TriangleFan> nGons;
+
+	static const glm::mat4 translation = glm::translate(glm::mat4(1.0F), glm::vec3(400.0F, 400.0F, 0.0F));
+	static double angle = 0.0;
+	static const double nGonAngleSpeed = glm::radians(0.5);
 
 	static bool pause = false;
-	static bool fill = true;
-	static unsigned short counter = 0;
 
-	static bool wPressed = false, sPressed = false, pPressed = false, fPressed = false;
+	static bool wPressed = false, sPressed = false, pPressed = false;
 
 	if (!wPressed && glfwGetKey(rawPtr, GLFW_KEY_W)) wPressed = true;
 	if (!sPressed && glfwGetKey(rawPtr, GLFW_KEY_S)) sPressed = true;
 	if (!pPressed && glfwGetKey(rawPtr, GLFW_KEY_P)) pPressed = true;
-	if (!fPressed && glfwGetKey(rawPtr, GLFW_KEY_F)) fPressed = true;
 
 	if (wPressed && !glfwGetKey(rawPtr, GLFW_KEY_W))
 	{
@@ -101,35 +102,29 @@ void testRPolys(const DK::Context& context)
 		nGon--;
 	}
 
-	if (nGon < 3)
+	if (nGon < nGonLimit.x)
 	{
-		nGon = 3; nGonSpeed *= -1;
+		nGon = nGonLimit.x; nGonSpeed *= -1;
 	}
-	else if (nGon > 30)
+	else if (nGon > nGonLimit.y)
 	{
-		nGon = 30; nGonSpeed *= -1;
-	}
-
-	if (counter++ == 5000)
-	{
-		counter = 0;
-		fill = !fill;
+		nGon = nGonLimit.y; nGonSpeed *= -1;
 	}
 
-	DK::renderRegularPoly(glm::vec2(400), 300, (unsigned int)nGon, startAngle, color, fill, 8.0F);
+	if (nGons.size() + 2u < (unsigned int)nGon)
+	{
+		nGons.push_back(DK::TriangleFan::makeRegularPoly((unsigned int)nGon, 300));
+	}
+	DK::renderTriangleFan(nGons[(unsigned int)nGon-3u], color, glm::rotate(translation, (float)angle, glm::vec3(0.0F, 0.0F, 1.0F)));
 
 	if (pPressed && !glfwGetKey(rawPtr, GLFW_KEY_P))
 	{
 		pPressed = false; pause = !pause;
 	}
-	if (fPressed && !glfwGetKey(rawPtr, GLFW_KEY_F))
-	{
-		fPressed = false; fill = !fill;
-	}
 
 	if (!pause)
 	{
-		startAngle += nGonAngleSpeed;
+		angle += nGonAngleSpeed;
 		nGon += nGonSpeed;
 	}
 }
@@ -209,23 +204,13 @@ int main()
 	};
 	DK::Context context({ 800u, 800u }, "Test - Game Renderer", hints);
 
-	glm::vec2 center = glm::vec2(400);
-	DK::TriangleFan hexagon = DK::TriangleFan::makeRegularPoly(6u, 200.0F);
-
-	float angle = 0.0F;
-	float angleDiff = static_cast<float>(glm::radians(1.0));
-
 	while (!context.shouldClose())
 	{
 		context.clearColor(glm::vec3(1.0f) - color);
 		updateColor();
 		context.clearScreen();
-		glm::mat4 model = glm::translate(glm::mat4(1.0F), glm::vec3(center, 0.0F));
-		model = glm::rotate(model, angle, glm::vec3(0.0F, 0.0F, 1.0F));
 		
-		DK::renderTriangleFan(hexagon, color, model);
-		
-		angle += angleDiff;
+		testRPolys(context);
 
 		context.swapBuffers();
 		context.pollEvents();
