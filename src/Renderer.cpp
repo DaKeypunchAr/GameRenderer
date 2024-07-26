@@ -5,13 +5,13 @@
 
 namespace DK
 {
-	void renderTriangle(const std::array<glm::vec2, 3>& vertices, Color4 color, bool fill, float strokeWidth)
+	void renderTriangle(const std::array<glm::vec2, 3>& vertices, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
 		if (!Context::s_CurrentContext) return;
 
 		if (!fill)
 		{
-			renderLineLoop({vertices[0], vertices[1], vertices[2]}, color, strokeWidth, LINE_ENDS_BAD);
+			renderLineLoop({vertices[0], vertices[1], vertices[2]}, color, strokeWidth, LINE_ENDS_BAD, model);
 			return;
 		}
 
@@ -35,7 +35,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glBindVertexArray(vao);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -43,20 +43,20 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderTriangle(const std::array<glm::vec2, 3>& vertices, Color3 color, bool fill, float strokeWidth)
+	void renderTriangle(const std::array<glm::vec2, 3>& vertices, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderTriangle(vertices, Color4(color, 1.0), fill, strokeWidth);
+		renderTriangle(vertices, Color4(color, 1.0), fill, strokeWidth, model);
 	}
-	void renderTriangle(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, Color4 color, bool fill, float strokeWidth)
+	void renderTriangle(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderTriangle({ p1, p2, p3 }, color, fill, strokeWidth);
+		renderTriangle({ p1, p2, p3 }, color, fill, strokeWidth, model);
 	}
-	void renderTriangle(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, Color3 color, bool fill, float strokeWidth)
+	void renderTriangle(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderTriangle({ p1, p2, p3 }, color, fill, strokeWidth);
+		renderTriangle({ p1, p2, p3 }, color, fill, strokeWidth, model);
 	}
 
-	void renderTriangles(const std::vector<std::array<glm::vec2, 3>>& triangles, Color4 color, bool fill, float strokeWidth)
+	void renderTriangles(const std::vector<std::array<glm::vec2, 3>>& triangles, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
 		if (!Context::s_CurrentContext) return;
 
@@ -64,7 +64,7 @@ namespace DK
 		{
 			for (const std::array<glm::vec2, 3>& vertices : triangles)
 			{
-				renderLineLoop(std::vector<glm::vec2>(vertices.begin(), vertices.end()), color, strokeWidth, LINE_ENDS_BAD);
+				renderLineLoop(std::vector<glm::vec2>(vertices.begin(), vertices.end()), color, strokeWidth, LINE_ENDS_BAD, model);
 			}
 			return;
 		}
@@ -89,7 +89,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glBindVertexArray(vao);
 		glDrawArrays(GL_TRIANGLES, 0, triangles.size() * 3);
@@ -97,11 +97,11 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderTriangles(const std::vector<std::array<glm::vec2, 3>>& triangles, Color3 color, bool fill, float strokeWidth)
+	void renderTriangles(const std::vector<std::array<glm::vec2, 3>>& triangles, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderTriangles(triangles, Color4(color, 1.0F), fill, strokeWidth);
+		renderTriangles(triangles, Color4(color, 1.0F), fill, strokeWidth, model);
 	}
-	void renderTriangleFan(const std::vector<glm::vec2>& vertices, Color4 color, bool fill, float strokeWidth)
+	void renderTriangleFan(const std::vector<glm::vec2>& vertices, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
 		if (!Context::s_CurrentContext) return;
 
@@ -109,7 +109,7 @@ namespace DK
 		{
 			for (unsigned int i = 2; i < vertices.size(); i++)
 			{
-				renderLineLoop({ vertices[0], vertices[i], vertices[i - 1] }, color, strokeWidth, LINE_ENDS_BAD);
+				renderLineLoop({ vertices[0], vertices[i], vertices[i - 1] }, color, strokeWidth, LINE_ENDS_BAD, model);
 			}
 			return;
 		}
@@ -134,7 +134,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glBindVertexArray(vao);
 		glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size());
@@ -142,18 +142,18 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderTriangleFan(const std::vector<glm::vec2>& vertices, Color3 color, bool fill, float strokeWidth)
+	void renderTriangleFan(const std::vector<glm::vec2>& vertices, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderTriangleFan(vertices, Color4(color, 1.0F), fill, strokeWidth);
+		renderTriangleFan(vertices, Color4(color, 1.0F), fill, strokeWidth, model);
 	}
 
-	void renderQuad(const std::array<glm::vec2, 4>& vertices, Color4 color, bool fill, float strokeWidth)
+	void renderQuad(const std::array<glm::vec2, 4>& vertices, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
 		if (!Context::s_CurrentContext) return;
 
 		if (!fill)
 		{
-			renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, LINE_ENDS_BAD);
+			renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, LINE_ENDS_BAD, model);
 			return;
 		}
 
@@ -177,7 +177,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glBindVertexArray(vao);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -185,20 +185,20 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderQuad(const std::array<glm::vec2, 4>& vertices, Color3 color, bool fill, float strokeWidth)
+	void renderQuad(const std::array<glm::vec2, 4>& vertices, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderQuad(vertices, Color4(color, 1.0), fill, strokeWidth);
+		renderQuad(vertices, Color4(color, 1.0), fill, strokeWidth, model);
 	}
-	void renderQuad(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4, Color4 color, bool fill, float strokeWidth)
+	void renderQuad(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderQuad({ p1, p2, p3, p4 }, color, fill, strokeWidth);
+		renderQuad({ p1, p2, p3, p4 }, color, fill, strokeWidth, model);
 	}
-	void renderQuad(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4, Color3 color, bool fill, float strokeWidth)
+	void renderQuad(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderQuad({ p1, p2, p3, p4 }, Color4(color, 1.0F), fill, strokeWidth);
+		renderQuad({ p1, p2, p3, p4 }, Color4(color, 1.0F), fill, strokeWidth, model);
 	}
 
-	void renderQuads(const std::vector<std::array<glm::vec2, 4>>& quads, Color4 color, bool fill, float strokeWidth)
+	void renderQuads(const std::vector<std::array<glm::vec2, 4>>& quads, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
 		if (!Context::s_CurrentContext) return;
 
@@ -206,7 +206,7 @@ namespace DK
 		{
 			for (const std::array<glm::vec2, 4>& vertices : quads)
 			{
-				renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, LINE_ENDS_BAD);
+				renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, LINE_ENDS_BAD, model);
 			}
 			return;
 		}
@@ -248,7 +248,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glBindVertexArray(vao);
 		glDrawElements(GL_TRIANGLES, quads.size() * 6, GL_UNSIGNED_INT, nullptr);
@@ -257,13 +257,13 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderQuads(const std::vector<std::array<glm::vec2, 4>>& quads, Color3 color, bool fill, float strokeWidth)
+	void renderQuads(const std::vector<std::array<glm::vec2, 4>>& quads, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderQuads(quads, Color4(color, 1.0F), fill, strokeWidth);
+		renderQuads(quads, Color4(color, 1.0F), fill, strokeWidth, model);
 	}
 
 	/* after the first two points. every other point must use the previous point to be a triangle in the polygon you want. */
-	void renderPoly(const std::vector<glm::vec2>& vertices, Color4 color, bool fill, float strokeWidth)
+	void renderPoly(const std::vector<glm::vec2>& vertices, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
 		if (!Context::s_CurrentContext) return;
 
@@ -294,7 +294,7 @@ namespace DK
 					i -= 2;
 				}
 			}
-			renderLineLoop(v, color, strokeWidth, LINE_ENDS_BAD);
+			renderLineLoop(v, color, strokeWidth, LINE_ENDS_BAD, model);
 			return;
 		}
 
@@ -318,7 +318,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glBindVertexArray(vao);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, vertices.size());
@@ -326,12 +326,12 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderPoly(const std::vector<glm::vec2>& vertices, Color3 color, bool fill, float strokeWidth)
+	void renderPoly(const std::vector<glm::vec2>& vertices, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderPoly(vertices, Color4(color, 1.0F), fill, strokeWidth);
+		renderPoly(vertices, Color4(color, 1.0F), fill, strokeWidth, model);
 	}
 
-	void renderPolys(const std::vector<std::vector<glm::vec2>>& polys, Color4 color, bool fill, float strokeWidth)
+	void renderPolys(const std::vector<std::vector<glm::vec2>>& polys, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
 		if (!Context::s_CurrentContext) return;
 
@@ -364,7 +364,7 @@ namespace DK
 						i -= 2;
 					}
 				}
-				renderLineLoop(v, color, strokeWidth, LINE_ENDS_BAD);
+				renderLineLoop(v, color, strokeWidth, LINE_ENDS_BAD, model);
 			}
 			return;
 		}
@@ -421,7 +421,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glBindVertexArray(vao);
 		glDrawElements(GL_TRIANGLES, numOfElements, GL_UNSIGNED_INT, nullptr);
@@ -430,12 +430,12 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderPolys(const std::vector<std::vector<glm::vec2>>& polys, Color3 color, bool fill, float strokeWidth)
+	void renderPolys(const std::vector<std::vector<glm::vec2>>& polys, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderPolys(polys, Color4(color, 1.0F), fill, strokeWidth);
+		renderPolys(polys, Color4(color, 1.0F), fill, strokeWidth, model);
 	}
 
-	void renderLine(const std::array<glm::vec2, 2>& vertices, Color4 color, float lineWidth, unsigned char lineType)
+	void renderLine(const std::array<glm::vec2, 2>& vertices, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
 		if (lineType == LINE_ENDS_GOOD)
 		{
@@ -458,7 +458,7 @@ namespace DK
 			glm::vec2 p3 = vertices[1] + lineSloper;
 			glm::vec2 p4 = vertices[1] - lineSloper;
 
-			renderQuad(p1, p2, p3, p4, color);
+			renderQuad(p1, p2, p3, p4, color, true, 1.0F, model);
 			return;
 		}
 		if (!Context::s_CurrentContext) return;
@@ -483,7 +483,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glLineWidth(lineWidth);
 		glBindVertexArray(vao);
@@ -492,20 +492,20 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLine(const std::array<glm::vec2, 2>& vertices, Color3 color, float lineWidth, unsigned char lineType)
+	void renderLine(const std::array<glm::vec2, 2>& vertices, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
-		renderLine(vertices, Color4(color, 1.0F), lineWidth, lineType);
+		renderLine(vertices, Color4(color, 1.0F), lineWidth, lineType, model);
 	}
-	void renderLine(glm::vec2 p1, glm::vec2 p2, Color4 color, float lineWidth, unsigned char lineType)
+	void renderLine(glm::vec2 p1, glm::vec2 p2, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
-		renderLine({ p1, p2 }, color, lineWidth, lineType);
+		renderLine({ p1, p2 }, color, lineWidth, lineType, model);
 	}
-	void renderLine(glm::vec2 p1, glm::vec2 p2, Color3 color, float lineWidth, unsigned char lineType)
+	void renderLine(glm::vec2 p1, glm::vec2 p2, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
-		renderLine({ p1, p2 }, Color4(color, 1.0F), lineWidth, lineType);
+		renderLine({ p1, p2 }, Color4(color, 1.0F), lineWidth, lineType, model);
 	}
 
-	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, unsigned char lineType)
+	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
 		if (lineType == LINE_ENDS_GOOD)
 		{
@@ -530,7 +530,7 @@ namespace DK
 				glm::vec2 p3 = vertices[i] + lineSloper;
 				glm::vec2 p4 = vertices[i] - lineSloper;
 
-				renderQuad(p1, p2, p3, p4, color);
+				renderQuad(p1, p2, p3, p4, color, true, 1.0F, model);
 			}
 			return;
 		}
@@ -556,7 +556,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glLineWidth(lineWidth);
 		glBindVertexArray(vao);
@@ -565,11 +565,11 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, unsigned char lineType)
+	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
-		renderLineStrip(vertices, Color4(color, 1.0F), lineWidth, lineType);
+		renderLineStrip(vertices, Color4(color, 1.0F), lineWidth, lineType, model);
 	}
-	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, unsigned char lineType)
+	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
 		if (lineType == LINE_ENDS_GOOD)
 		{
@@ -615,7 +615,7 @@ namespace DK
 			glm::vec2 p3 = vertices[0] + lineSloper;
 			glm::vec2 p4 = vertices[0] - lineSloper;
 
-			renderQuad(p1, p2, p3, p4, color);
+			renderQuad(p1, p2, p3, p4, color, true, 1.0F, model);
 			return;
 		}
 		if (!Context::s_CurrentContext) return;
@@ -641,7 +641,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glLineWidth(lineWidth);
 		glBindVertexArray(vao);
@@ -650,18 +650,18 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, unsigned char lineType)
+	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
-		renderLineLoop(vertices, Color4(color, 1.0F), lineWidth, lineType);
+		renderLineLoop(vertices, Color4(color, 1.0F), lineWidth, lineType, model);
 	}
 
-	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color4 color, float lineWidth, unsigned char lineType)
+	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
 		if (lineType == LINE_ENDS_GOOD)
 		{
 			for (const std::array<glm::vec2, 2>& line : lines)
 			{
-				renderLine(line, color, lineWidth, lineType);
+				renderLine(line, color, lineWidth, LINE_ENDS_GOOD, model);
 			}
 			return;
 		}
@@ -687,7 +687,7 @@ namespace DK
 		Program::colorRenderer.use();
 		Program::colorRenderer.uni4f("uColor", color);
 
-		Program::colorRenderer.uniMVP(Context::s_CurrentContext->getProjectionMatrix());
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
 
 		glLineWidth(lineWidth);
 		glBindVertexArray(vao);
@@ -696,9 +696,9 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color3 color, float lineWidth, unsigned char lineType)
+	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
 	{
-		renderLines(lines, Color4(color, 1.0F), lineWidth, lineType);
+		renderLines(lines, Color4(color, 1.0F), lineWidth, lineType, model);
 	}
 
 	void renderCircle(glm::vec2 point, float radius, Color4 color, bool fill, float strokeWidth)
@@ -1005,7 +1005,7 @@ namespace DK
 		renderRings(points, outerRadii, innerRadii, Color4(color, 1.0F), fill, strokeWidth);
 	}
 
-	void renderRegularPoly(glm::vec2 point, float radius, unsigned int nSided, float startAngle, Color4 color, bool fill, float strokeWidth)
+	void renderRegularPoly(glm::vec2 point, float radius, unsigned int nSided, float startAngle, Color4 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
 		double angDiff = glm::radians(360.0 / (double)nSided);
 
@@ -1024,15 +1024,292 @@ namespace DK
 		if (fill)
 		{
 			vertices.push_back(vertices[1]);
-			renderTriangleFan(vertices, color, fill, strokeWidth);
+			renderTriangleFan(vertices, color, fill, strokeWidth, model);
 		}
 		else
 		{
-			renderLineLoop(vertices, color, strokeWidth, LINE_ENDS_BAD);
+			renderLineLoop(vertices, color, strokeWidth, LINE_ENDS_BAD, model);
 		}
 	}
-	void renderRegularPoly(glm::vec2 point, float radius, unsigned int nSided, float startAngle, Color3 color, bool fill, float strokeWidth)
+	void renderRegularPoly(glm::vec2 point, float radius, unsigned int nSided, float startAngle, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
 	{
-		renderRegularPoly(point, radius, nSided, startAngle, Color4(color, 1.0F), fill, strokeWidth);
+		renderRegularPoly(point, radius, nSided, startAngle, Color4(color, 1.0F), fill, strokeWidth, model);
 	}
-}
+
+	/* Renders - for Shape Classes */
+
+	void renderTriangle(const Triangle& tri, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!tri.isInitialized() || tri.needsUpdate())
+		{
+			if (!tri.isInitialized())
+			{
+				glCreateVertexArrays(1, &tri.m_VAO);
+
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+				glVertexArrayVertexBuffer(tri.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribBinding(tri.m_VAO, 0, 0);
+				glVertexArrayAttribFormat(tri.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glEnableVertexArrayAttrib(tri.m_VAO, 0);
+				tri.m_VBOs.push_back(vb);
+
+				tri.m_Initialized = true;
+			}
+
+			glNamedBufferData(tri.m_VBOs[0], sizeof(float) * 6, tri.get().data(), GL_STATIC_DRAW);
+			tri.m_NeedsUpdate = false;
+		}
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glBindVertexArray(tri.m_VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
+	void renderTriangle(const Triangle& tri, Color3 color, glm::mat4 model)
+	{
+		renderTriangle(tri, Color4(color, 1.0F), model);
+	}
+	void renderTriangles(const Triangles& tris, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!tris.isInitialized() || tris.needsUpdate())
+		{
+			if (!tris.isInitialized())
+			{
+				glCreateVertexArrays(1, &tris.m_VAO);
+
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+				glVertexArrayVertexBuffer(tris.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribBinding(tris.m_VAO, 0, 0);
+				glVertexArrayAttribFormat(tris.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glEnableVertexArrayAttrib(tris.m_VAO, 0);
+				tris.m_VBOs.push_back(vb);
+
+				tris.m_Initialized = true;
+			}
+
+			glNamedBufferData(tris.m_VBOs[0], sizeof(float) * 2 * tris.get().size(), tris.get().data(), GL_STATIC_DRAW);
+			tris.m_NeedsUpdate = false;
+		}
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glBindVertexArray(tris.m_VAO);
+		glDrawArrays(GL_TRIANGLES, 0, tris.get().size());
+	}
+	void renderTriangles(const Triangles& tris, Color3 color, glm::mat4 model)
+	{
+		renderTriangles(tris, Color4(color, 1.0F), model);
+	}
+	void renderTriangleFan(const TriangleFan& triFan, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!triFan.isInitialized() || triFan.needsUpdate())
+		{
+			if (!triFan.isInitialized())
+			{
+				glCreateVertexArrays(1, &triFan.m_VAO);
+
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+				glVertexArrayVertexBuffer(triFan.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribBinding(triFan.m_VAO, 0, 0);
+				glVertexArrayAttribFormat(triFan.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glEnableVertexArrayAttrib(triFan.m_VAO, 0);
+				triFan.m_VBOs.push_back(vb);
+
+				triFan.m_Initialized = true;
+			}
+
+			glNamedBufferData(triFan.m_VBOs[0], sizeof(float) * 2 * triFan.get().size(), triFan.get().data(), GL_STATIC_DRAW);
+			triFan.m_NeedsUpdate = false;
+		}
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glBindVertexArray(triFan.m_VAO);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, triFan.get().size());
+	}
+	void renderTriangleFan(const TriangleFan& triFan, Color3 color, glm::mat4 model)
+	{
+		renderTriangleFan(triFan, Color4(color, 1.0F), model);
+	}
+
+	void renderQuad(const Quad& quad, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!quad.isInitialized() || quad.needsUpdate())
+		{
+			if (!quad.isInitialized())
+			{
+				glCreateVertexArrays(1, &quad.m_VAO);
+
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+				glVertexArrayVertexBuffer(quad.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribBinding(quad.m_VAO, 0, 0);
+				glVertexArrayAttribFormat(quad.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glEnableVertexArrayAttrib(quad.m_VAO, 0);
+				quad.m_VBOs.push_back(vb);
+
+				quad.m_Initialized = true;
+			}
+
+			glNamedBufferData(quad.m_VBOs[0], sizeof(float) * 8, quad.get().data(), GL_STATIC_DRAW);
+			quad.m_NeedsUpdate = false;
+		}
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glBindVertexArray(quad.m_VAO);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	}
+	void renderQuad(const Quad& quad, Color3 color, glm::mat4 model)
+	{
+		renderQuad(quad, Color4(color, 1.0F), model);
+	}
+	void renderQuads(const Quads& quads, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		const unsigned int totalQuads = quads.totalQuads();
+		const unsigned int totalElements = totalQuads * 6u;
+		if (!quads.isInitialized() || quads.needsUpdate())
+		{
+			if (!quads.isInitialized())
+			{
+				glCreateVertexArrays(1, &quads.m_VAO);
+
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+				glVertexArrayVertexBuffer(quads.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribBinding(quads.m_VAO, 0, 0);
+				glVertexArrayAttribFormat(quads.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glEnableVertexArrayAttrib(quads.m_VAO, 0);
+				quads.m_VBOs.push_back(vb);
+
+				quads.m_Initialized = true;
+			}
+
+			if (quads.m_ElementsAdded)
+			{
+				std::vector<unsigned int> eb;
+				eb.reserve(totalElements);
+				for (unsigned int i = 0; i < totalQuads; i++)
+				{
+					unsigned int i4 = i * 4u;
+					eb.push_back(i4);
+					eb.push_back(i4 + 1);
+					eb.push_back(i4 + 2);
+					eb.push_back(i4 + 1);
+					eb.push_back(i4 + 2);
+					eb.push_back(i4 + 3);
+				}
+				quads.setEBO(eb);
+				quads.m_ElementsAdded = false;
+			}
+
+			glNamedBufferData(quads.m_VBOs[0], sizeof(float) * 2 * quads.get().size(), quads.get().data(), GL_STATIC_DRAW);
+			quads.m_NeedsUpdate = false;
+		}
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glBindVertexArray(quads.m_VAO);
+		glDrawElements(GL_TRIANGLES, totalElements, GL_UNSIGNED_INT, nullptr);
+	}
+	void renderQuads(const Quads& quads, Color3 color, glm::mat4 model)
+	{
+		renderQuads(quads, Color4(color, 1.0F), model);
+	}
+
+	void renderPoly(const Polygon& poly, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!poly.isInitialized() || poly.needsUpdate())
+		{
+			if (!poly.isInitialized())
+			{
+				glCreateVertexArrays(1, &poly.m_VAO);
+
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+				glVertexArrayVertexBuffer(poly.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribBinding(poly.m_VAO, 0, 0);
+				glVertexArrayAttribFormat(poly.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glEnableVertexArrayAttrib(poly.m_VAO, 0);
+				poly.m_VBOs.push_back(vb);
+
+				poly.m_Initialized = true;
+			}
+
+			glNamedBufferData(poly.m_VBOs[0], sizeof(float) * 2 * poly.get().size(), poly.get().data(), GL_STATIC_DRAW);
+			poly.m_NeedsUpdate = false;
+		}
+
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glBindVertexArray(poly.m_VAO);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, poly.get().size());
+	}
+	void renderPoly(const Polygon& poly, Color3 color, glm::mat4 model)
+	{
+		renderPoly(poly, Color4(color, 1.0F), model);
+	}
+} 

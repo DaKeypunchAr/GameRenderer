@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.28...3.29)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
-project(GameRenderer VERSION 1.0.0 LANGUAGES CXX)
+project(GameRenderer VERSION 0.3.0 LANGUAGES CXX)
 
-add_library(GRenderer "src/Context.cpp" "src/ShaderProgram.cpp" "src/Renderer.cpp")
+add_library(GRenderer "src/Context.cpp" "src/ShaderProgram.cpp" "src/Renderer.cpp"  "src/Shapes.cpp")
 set(GLFW_LIBRARY_TYPE STATIC)
 set(GLFW_BUILD_SHARED_LIBS OFF)
 
