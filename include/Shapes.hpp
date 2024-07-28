@@ -156,6 +156,10 @@ namespace DK
 		Triangle getTriAt(unsigned int i) const;
 		unsigned int totalTriangles() const { return m_Vertices.size() / 3u; }
 
+	private:
+		Triangles(const std::vector<glm::vec2>& vertices);
+
+		friend Shape;
 		friend void renderTriangles(const Triangles& tris, Color4 color, glm::mat4 model);
 	};
 
@@ -186,7 +190,11 @@ namespace DK
 		Quad getQuadAt(unsigned int i) const;
 		unsigned int totalQuads() const { return m_Vertices.size() / 4u; }
 
-		friend void renderQuads(const Quads& quads, Color4 color, glm::mat4 model);
+	private:
+		Quads(const std::vector<glm::vec2>& vertices);
+
+		friend Shape;
+		friend void renderQuads(const Quads& line, Color4 color, glm::mat4 model);
 
 	protected:
 		mutable bool m_ElementsAdded = true;
@@ -220,10 +228,14 @@ namespace DK
 
 		Triangle getTriAt(unsigned int i) const;
 
-		friend void renderTriangleFan(const TriangleFan& triFan, Color4 color, glm::mat4 model);
-
 	public:
 		static TriangleFan makeRegularPoly(unsigned int nSided, float radius);
+
+	private:
+		TriangleFan(const std::vector<glm::vec2>& vertices);
+
+		friend Shape;
+		friend void renderTriangleFan(const TriangleFan& triFan, Color4 color, glm::mat4 model);
 	};
 
 	class Line : public Shape
@@ -262,21 +274,26 @@ namespace DK
 		void update(unsigned int lineIdx, const LineStrip& line);
 		void update(unsigned int lineIdx, const LineLoop& line);
 
-		void setLineWidth(unsigned int lineIdx, float lineWidth) const;
-		float getLineWidth(unsigned int lineIdx) const;
+		void setLineWidth(float lineWidth) const;
+		float getLineWidth() const;
 
 		Line getLineAt(unsigned int lineIdx) const;
 
-		friend void renderLines(const Lines& line, Color4 color, glm::mat4 model);
-		
+		unsigned int totalLines() const { return m_Vertices.size() / 2u; }
 	private:
-		mutable std::vector<float> m_LineWidths;
+		Lines(const std::vector<glm::vec2>& vertices);
+
+		friend Shape;
+		friend void renderLines(const Lines& lines, Color4 color, glm::mat4 model);
+
+	private:
+		mutable float m_LineWidth;
 	};
 
 	class LineStrip : public Shape
 	{
 	public:
-		LineStrip(const std::vector<glm::vec2>& vertices);
+		LineStrip(const std::vector<glm::vec2>& vertices, float lineWidth);
 		~LineStrip() = default;
 
 		void setLineWidth(float lineWidth) const;
@@ -284,8 +301,12 @@ namespace DK
 
 		void add(const std::vector<glm::vec2>& vertices);
 
-		friend void renderLineStrip(const LineStrip& line, Color4 color, glm::mat4 model);
-		
+	private:
+		LineStrip(const std::vector<glm::vec2>& vertices);
+
+		friend Shape;
+		friend void renderLineStrip(const LineStrip& lineStrip, Color4 color, glm::mat4 model);
+
 	private:
 		mutable float m_LineWidth;
 	};
@@ -301,8 +322,12 @@ namespace DK
 
 		void add(const std::vector<glm::vec2>& vertices);
 
+	private:
+		LineLoop(const std::vector<glm::vec2>& vertices);
+
+		friend Shape;
 		friend void renderLineLoop(const LineLoop& line, Color4 color, glm::mat4 model);
-		
+
 	private:
 		mutable float m_LineWidth;
 	};

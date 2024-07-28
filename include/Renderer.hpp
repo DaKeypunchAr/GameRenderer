@@ -30,18 +30,15 @@ namespace DK
 	void renderPolys(const std::vector<std::vector<glm::vec2>>& vertices, Color4 color = Color4(WHITE, 1.0F), bool fill = true, float strokeWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
 	void renderPolys(const std::vector<std::vector<glm::vec2>>& vertices, Color3 color = WHITE, bool fill = true, float strokeWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
 
-	static const unsigned char LINE_ENDS_BAD = 0;
-	static const unsigned char LINE_ENDS_GOOD = 1;
+	void renderLine(const std::array<glm::vec2, 2>& vertices, Color4 color = Color4(WHITE, 1.0F), float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
+	void renderLine(const std::array<glm::vec2, 2>& vertices, Color3 color = WHITE, float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
+	void renderLine(glm::vec2 p1, glm::vec2 p2, Color4 color = Color4(WHITE, 1.0F), float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
+	void renderLine(glm::vec2 p1, glm::vec2 p2, Color3 color, float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
 
-	void renderLine(const std::array<glm::vec2, 2>& vertices, Color4 color = Color4(WHITE, 1.0F), float lineWidth = 1.0F, unsigned char lineType = LINE_ENDS_BAD, glm::mat4 model = glm::mat4(1.0F));
-	void renderLine(const std::array<glm::vec2, 2>& vertices, Color3 color = WHITE, float lineWidth = 1.0F, unsigned char lineType = LINE_ENDS_BAD, glm::mat4 model = glm::mat4(1.0F));
-	void renderLine(glm::vec2 p1, glm::vec2 p2, Color4 color = Color4(WHITE, 1.0F), float lineWidth = 1.0F, unsigned char lineType = LINE_ENDS_BAD, glm::mat4 model = glm::mat4(1.0F));
-	void renderLine(glm::vec2 p1, glm::vec2 p2, Color3 color, float lineWidth = 1.0F, unsigned char lineType = LINE_ENDS_BAD, glm::mat4 model = glm::mat4(1.0F));
-
-	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color4 color = Color4(WHITE, 1.0F), float lineWidth = 1.0F, unsigned char lineType = LINE_ENDS_BAD, glm::mat4 model = glm::mat4(1.0F));
-	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color3 color = WHITE, float lineWidth = 1.0F, unsigned char lineType = LINE_ENDS_BAD, glm::mat4 model = glm::mat4(1.0F));
-	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color4 color = Color4(WHITE, 1.0F), float lineWidth = 1.0F, unsigned char lineType = LINE_ENDS_BAD, glm::mat4 model = glm::mat4(1.0F));
-	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color3 color = WHITE, float lineWidth = 1.0F, unsigned char lineType = LINE_ENDS_BAD, glm::mat4 model = glm::mat4(1.0F));
+	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color4 color = Color4(WHITE, 1.0F), float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
+	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color3 color = WHITE, float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
+	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color4 color = Color4(WHITE, 1.0F), float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
+	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color3 color = WHITE, float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
 
 	void renderLines(const std::vector<std::array<glm::vec2, 2>>& vertices, Color4 color = Color4(DK::WHITE, 1.0F), float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));
 	void renderLines(const std::vector<std::array<glm::vec2, 2>>& vertices, Color3 color = DK::WHITE, float lineWidth = 1.0F, glm::mat4 model = glm::mat4(1.0F));

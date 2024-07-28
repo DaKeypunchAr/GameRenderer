@@ -73,6 +73,57 @@ namespace DK
 		return m_Primitive;
 	}
 
+	Shape::operator Triangle() const
+	{
+		if (m_Primitive != Primitive::TRIANGLE) throw std::exception("The shape can't be converted into a triangle!");
+		return { m_Vertices[0], m_Vertices[1], m_Vertices[2] };
+	}
+	Shape::operator Triangles() const
+	{
+		if (m_Primitive != Primitive::TRIANGLES) throw std::exception("The shape can't be converted into triangles");
+		return m_Vertices;
+	}
+	Shape::operator TriangleFan() const
+	{
+		if (m_Primitive != Primitive::TRIANGLE_FAN) throw std::exception("The shape can't be converted into triangle fan");
+		return m_Vertices;
+	}
+	Shape::operator Quad() const
+	{
+		if (m_Primitive != Primitive::QUAD) throw std::exception("The shape can't be converted into quad");
+		return { m_Vertices[0], m_Vertices[1], m_Vertices[2], m_Vertices[3] };
+	}
+	Shape::operator Quads() const
+	{
+		if (m_Primitive != Primitive::QUADS) throw std::exception("The shape can't be converted into quads");
+		return m_Vertices;
+	}
+	Shape::operator Polygon() const
+	{
+		if (m_Primitive != Primitive::POLYGON) throw std::exception("The shape can't be converted into polygon");
+		return m_Vertices;
+	}
+	Shape::operator Line() const
+	{
+		if (m_Primitive != Primitive::LINE) throw std::exception("The shape can't be converted into line");
+		return { m_Vertices[0], m_Vertices[1], 2.0F }; // line width is the loss of data.
+	}
+	Shape::operator DK::Lines() const
+	{
+		if (m_Primitive != Primitive::LINES) throw std::exception("The shape can't be converted into lines");
+		return m_Vertices;
+	}
+	Shape::operator DK::LineStrip() const
+	{
+		if (m_Primitive != Primitive::LINE_STRIP) throw std::exception("The shape can't be converted into line strip");
+		return m_Vertices;
+	}
+	Shape::operator DK::LineLoop() const
+	{
+		if (m_Primitive != Primitive::LINE_LOOP) throw std::exception("The shape can't be converted into line loop");
+		return m_Vertices;
+	}
+
 	/* Shape - Triangle */
 	Triangle::Triangle(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3)
 		: Shape({ p1,p2,p3 }, Primitive::TRIANGLE) {}
@@ -112,6 +163,8 @@ namespace DK
 	{
 		add(polygons);
 	}
+	Triangles::Triangles(const std::vector<glm::vec2>& vertices)
+		: Shape(vertices, Primitive::TRIANGLES) {}
 
 	void Triangles::add(const std::vector<Triangle>& triangles)
 	{
@@ -239,6 +292,8 @@ namespace DK
 	{
 		add(quads);
 	}
+	Quads::Quads(const std::vector<glm::vec2>& vertices)
+		: Shape(vertices, Primitive::QUADS) {}
 
 	void Quads::add(const std::vector<Quad>& quads)
 	{
@@ -316,6 +371,8 @@ namespace DK
 	}
 	TriangleFan::TriangleFan(const TriangleFan& triFan)
 		: Shape(triFan.get(), Primitive::TRIANGLE_FAN) {}
+	TriangleFan::TriangleFan(const std::vector<glm::vec2>& vertices)
+		: Shape(vertices, Primitive::TRIANGLE_FAN) {}
 
 	void TriangleFan::setCenterPoint(glm::vec2 p)
 	{
@@ -363,23 +420,176 @@ namespace DK
 
 	/* Shape - Lines */
 	Lines::Lines(const std::vector<Line>& lines)
-		: Shape({}, Primitive::LINES), m_LineWidths()
+		: Shape({}, Primitive::LINES), m_LineWidth(lines[0].getLineWidth())
 	{
 		add(lines);
 	}
 	Lines::Lines(const std::vector<Lines>& lines)
-		: Shape({}, Primitive::LINES), m_LineWidths()
+		: Shape({}, Primitive::LINES), m_LineWidth(lines[0].getLineWidth())
 	{
 		add(lines);
 	}
 	Lines::Lines(const std::vector<LineStrip>& lineStrips)
-		: Shape({}, Primitive::LINES), m_LineWidths()
+		: Shape({}, Primitive::LINES), m_LineWidth(lineStrips[0].getLineWidth())
 	{
 		add(lineStrips);
 	}
 	Lines::Lines(const std::vector<LineLoop>& lineLoops)
-		: Shape({}, Primitive::LINES), m_LineWidths()
+		: Shape({}, Primitive::LINES), m_LineWidth(lineLoops[0].getLineWidth())
 	{
 		add(lineLoops);
+	}
+	Lines::Lines(const std::vector<glm::vec2>& vertices)
+		: Shape(vertices, Primitive::LINES), m_LineWidth(2.0F) {}
+
+	void Lines::add(const std::vector<Line>& lines)
+	{
+		for (const Line& line : lines)
+		{
+			m_Vertices.push_back(line[0]);
+			m_Vertices.push_back(line[1]);
+		}
+		m_NeedsUpdate = true;
+	}
+	void Lines::add(const std::vector<Lines>& lines)
+	{
+		for (const Lines& line : lines)
+		{
+			ammendVector(line.get(), m_Vertices);
+		}
+		m_NeedsUpdate = true;
+	}
+	void Lines::add(const std::vector<LineStrip>& lineStrips)
+	{
+		for (const LineStrip& lineStrip : lineStrips)
+		{
+			const auto& v = lineStrip.get();
+			for (unsigned int i = 1; i < v.size(); i++)
+			{
+				m_Vertices.push_back(v[i - 1]);
+				m_Vertices.push_back(v[i]);
+			}
+		}
+		m_NeedsUpdate = true;
+	}
+	void Lines::add(const std::vector<LineLoop>& lineLoops)
+	{
+		for (const LineLoop& lineLoop : lineLoops)
+		{
+			const auto& v = lineLoop.get();
+			for (unsigned int i = 1; i < v.size(); i++)
+			{
+				m_Vertices.push_back(v[i = 1]);
+				m_Vertices.push_back(v[i]);
+			}
+			m_Vertices.push_back(v[v.size() - 1]);
+			m_Vertices.push_back(v[0]);
+		}
+		m_NeedsUpdate = true;
+	}
+
+	void Lines::update(unsigned int lineIdx, const Line& line)
+	{
+		unsigned int vIdx = lineIdx * 2u;
+		if (vIdx + 2u > m_Vertices.size()) throw std::exception("Index out of bound!");
+
+		m_Vertices[vIdx] = line[0];
+		m_Vertices[vIdx + 1] = line[1];
+		m_NeedsUpdate = true;
+	}
+	void Lines::update(unsigned int lineIdx, const Lines& lines)
+	{
+		unsigned int vIdx = lineIdx * 2u;
+		if (vIdx + lines.get().size() > m_Vertices.size()) throw std::exception("Index out of bound!");
+
+		for (unsigned int i = vIdx, j = 0; j < lines.get().size(); i++, j++)
+		{
+			m_Vertices[i] = lines[j];
+		}
+		m_NeedsUpdate = true;
+	}
+	void Lines::update(unsigned int lineIdx, const LineStrip& lineStrip)
+	{
+		unsigned int vIdx = lineIdx * 2u;
+		if (vIdx + lineStrip.get().size() * 2u - 2u > m_Vertices.size()) throw std::exception("Index out of bound!");
+
+		for (unsigned int i = vIdx, j = 1; j < lineStrip.get().size(); i++, j++)
+		{
+			m_Vertices[i++] = lineStrip[j - 1];
+			m_Vertices[i] = lineStrip[j];
+		}
+		m_NeedsUpdate = true;
+	}
+	void Lines::update(unsigned int lineIdx, const LineLoop& lineLoop)
+	{
+		unsigned int vIdx = lineIdx * 2u;
+		if (vIdx + lineLoop.get().size() * 2u > m_Vertices.size()) throw std::exception("Index out of bound!");
+
+		unsigned int i = vIdx;
+		for (unsigned int j = 1; j < lineLoop.get().size(); i++, j++)
+		{
+			m_Vertices[i++] = lineLoop[j - 1];
+			m_Vertices[i] = lineLoop[j];
+		}
+		m_Vertices[i++] = lineLoop[lineLoop.get().size() - 1];
+		m_Vertices[i] = lineLoop[0];
+		m_NeedsUpdate = true;
+	}
+
+	void Lines::setLineWidth(float lineWidth) const
+	{
+		m_LineWidth = lineWidth;
+	}
+	float Lines::getLineWidth() const
+	{
+		return m_LineWidth;
+	}
+
+	Line Lines::getLineAt(unsigned int lineIdx) const
+	{
+		unsigned int vIdx = lineIdx * 2u;
+		if (vIdx + 2u > m_Vertices.size()) throw std::exception("Index out of bound!");
+
+		return { m_Vertices[vIdx], m_Vertices[vIdx + 1], m_LineWidth };
+	}
+
+	/* Shape - Line Strip */
+	LineStrip::LineStrip(const std::vector<glm::vec2>& vertices, float lineWidth)
+		: Shape(vertices, Primitive::LINE_STRIP), m_LineWidth(lineWidth) {}
+	LineStrip::LineStrip(const std::vector<glm::vec2>& vertices)
+		: Shape(vertices, Primitive::LINE_STRIP), m_LineWidth(2.0F) {}
+
+	void LineStrip::setLineWidth(float lineWidth) const
+	{
+		m_LineWidth = lineWidth;
+	}
+	float LineStrip::getLineWidth() const
+	{
+		return m_LineWidth;
+	}
+
+	void LineStrip::add(const std::vector<glm::vec2>& vertices)
+	{
+		ammendVector(vertices, m_Vertices);
+	}
+
+	/* Shape - Line Loop */
+	LineLoop::LineLoop(const std::vector<glm::vec2>& vertices, float lineWidth)
+		: Shape(vertices, Primitive::LINE_LOOP), m_LineWidth(lineWidth) {}
+	LineLoop::LineLoop(const std::vector<glm::vec2>& vertices)
+		: Shape(vertices, Primitive::LINE_LOOP), m_LineWidth(2.0F) {}
+
+	void LineLoop::setLineWidth(float lineWidth) const
+	{
+		m_LineWidth = lineWidth;
+	}
+	float LineLoop::getLineWidth() const
+	{
+		return m_LineWidth;
+	}
+
+	void LineLoop::add(const std::vector<glm::vec2>& vertices)
+	{
+		ammendVector(vertices, m_Vertices);
 	}
 }

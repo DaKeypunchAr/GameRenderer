@@ -11,7 +11,7 @@ namespace DK
 
 		if (!fill)
 		{
-			renderLineLoop({vertices[0], vertices[1], vertices[2]}, color, strokeWidth, LINE_ENDS_BAD, model);
+			renderLineLoop({vertices[0], vertices[1], vertices[2]}, color, strokeWidth, model);
 			return;
 		}
 
@@ -64,7 +64,7 @@ namespace DK
 		{
 			for (const std::array<glm::vec2, 3>& vertices : triangles)
 			{
-				renderLineLoop(std::vector<glm::vec2>(vertices.begin(), vertices.end()), color, strokeWidth, LINE_ENDS_BAD, model);
+				renderLineLoop(std::vector<glm::vec2>(vertices.begin(), vertices.end()), color, strokeWidth, model);
 			}
 			return;
 		}
@@ -109,7 +109,7 @@ namespace DK
 		{
 			for (unsigned int i = 2; i < vertices.size(); i++)
 			{
-				renderLineLoop({ vertices[0], vertices[i], vertices[i - 1] }, color, strokeWidth, LINE_ENDS_BAD, model);
+				renderLineLoop({ vertices[0], vertices[i], vertices[i - 1] }, color, strokeWidth, model);
 			}
 			return;
 		}
@@ -153,7 +153,7 @@ namespace DK
 
 		if (!fill)
 		{
-			renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, LINE_ENDS_BAD, model);
+			renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, model);
 			return;
 		}
 
@@ -206,7 +206,7 @@ namespace DK
 		{
 			for (const std::array<glm::vec2, 4>& vertices : quads)
 			{
-				renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, LINE_ENDS_BAD, model);
+				renderLineLoop({ vertices[0], vertices[1], vertices[3], vertices[2] }, color, strokeWidth, model);
 			}
 			return;
 		}
@@ -294,7 +294,7 @@ namespace DK
 					i -= 2;
 				}
 			}
-			renderLineLoop(v, color, strokeWidth, LINE_ENDS_BAD, model);
+			renderLineLoop(v, color, strokeWidth, model);
 			return;
 		}
 
@@ -364,7 +364,7 @@ namespace DK
 						i -= 2;
 					}
 				}
-				renderLineLoop(v, color, strokeWidth, LINE_ENDS_BAD, model);
+				renderLineLoop(v, color, strokeWidth, model);
 			}
 			return;
 		}
@@ -435,32 +435,8 @@ namespace DK
 		renderPolys(polys, Color4(color, 1.0F), fill, strokeWidth, model);
 	}
 
-	void renderLine(const std::array<glm::vec2, 2>& vertices, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLine(const std::array<glm::vec2, 2>& vertices, Color4 color, float lineWidth, glm::mat4 model)
 	{
-		if (lineType == LINE_ENDS_GOOD)
-		{
-			glm::vec2 offset = vertices[1] - vertices[0];
-
-			float distance = glm::sqrt((offset.x * offset.x) + (offset.y * offset.y));
-
-			if (distance == 0)
-			{
-				throw std::exception("Line must not be a point!");
-			}
-
-			glm::vec2 dir = offset / distance;
-
-			glm::vec2 lineSloper = glm::vec2(-dir.y, dir.x) * lineWidth / 2.0f;
-
-			glm::vec2 p1 = vertices[0] + lineSloper;
-			glm::vec2 p2 = vertices[0] - lineSloper;
-
-			glm::vec2 p3 = vertices[1] + lineSloper;
-			glm::vec2 p4 = vertices[1] - lineSloper;
-
-			renderQuad(p1, p2, p3, p4, color, true, 1.0F, model);
-			return;
-		}
 		if (!Context::s_CurrentContext) return;
 
 		unsigned int vao;
@@ -492,48 +468,21 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLine(const std::array<glm::vec2, 2>& vertices, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLine(const std::array<glm::vec2, 2>& vertices, Color3 color, float lineWidth, glm::mat4 model)
 	{
-		renderLine(vertices, Color4(color, 1.0F), lineWidth, lineType, model);
+		renderLine(vertices, Color4(color, 1.0F), lineWidth, model);
 	}
-	void renderLine(glm::vec2 p1, glm::vec2 p2, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLine(glm::vec2 p1, glm::vec2 p2, Color4 color, float lineWidth, glm::mat4 model)
 	{
-		renderLine({ p1, p2 }, color, lineWidth, lineType, model);
+		renderLine({ p1, p2 }, color, lineWidth, model);
 	}
-	void renderLine(glm::vec2 p1, glm::vec2 p2, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLine(glm::vec2 p1, glm::vec2 p2, Color3 color, float lineWidth, glm::mat4 model)
 	{
-		renderLine({ p1, p2 }, Color4(color, 1.0F), lineWidth, lineType, model);
+		renderLine({ p1, p2 }, Color4(color, 1.0F), lineWidth, model);
 	}
 
-	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, glm::mat4 model)
 	{
-		if (lineType == LINE_ENDS_GOOD)
-		{
-			for (unsigned int i = 1; i < vertices.size(); i++)
-			{
-				glm::vec2 offset = vertices[i] - vertices[i-1];
-
-				float distance = glm::sqrt((offset.x * offset.x) + (offset.y * offset.y));
-
-				if (distance == 0)
-				{
-					throw std::exception("Line must not be a point!");
-				}
-
-				glm::vec2 dir = offset / distance;
-
-				glm::vec2 lineSloper = glm::vec2(-dir.y, dir.x) * lineWidth / 2.0f;
-
-				glm::vec2 p1 = vertices[i-1] + lineSloper;
-				glm::vec2 p2 = vertices[i-1] - lineSloper;
-
-				glm::vec2 p3 = vertices[i] + lineSloper;
-				glm::vec2 p4 = vertices[i] - lineSloper;
-
-				renderQuad(p1, p2, p3, p4, color, true, 1.0F, model);
-			}
-			return;
-		}
 		if (!Context::s_CurrentContext) return;
 
 		unsigned int vao;
@@ -565,59 +514,12 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLineStrip(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, glm::mat4 model)
 	{
-		renderLineStrip(vertices, Color4(color, 1.0F), lineWidth, lineType, model);
+		renderLineStrip(vertices, Color4(color, 1.0F), lineWidth, model);
 	}
-	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color4 color, float lineWidth, glm::mat4 model)
 	{
-		if (lineType == LINE_ENDS_GOOD)
-		{
-			for (unsigned int i = 1; i < vertices.size(); i++)
-			{
-				glm::vec2 offset = vertices[i] - vertices[i - 1];
-
-				float distance = glm::sqrt((offset.x * offset.x) + (offset.y * offset.y));
-
-				if (distance == 0)
-				{
-					throw std::exception("Line must not be a point!");
-				}
-
-				glm::vec2 dir = offset / distance;
-
-				glm::vec2 lineSloper = glm::vec2(-dir.y, dir.x) * lineWidth / 2.0f;
-
-				glm::vec2 p1 = vertices[i - 1] + lineSloper;
-				glm::vec2 p2 = vertices[i - 1] - lineSloper;
-
-				glm::vec2 p3 = vertices[i] + lineSloper;
-				glm::vec2 p4 = vertices[i] - lineSloper;
-
-				renderQuad(p1, p2, p3, p4, color);
-			}
-			glm::vec2 offset = vertices[0] - vertices[vertices.size() - 1];
-
-			float distance = glm::sqrt((offset.x * offset.x) + (offset.y * offset.y));
-
-			if (distance == 0)
-			{
-				throw std::exception("Line must not be a point!");
-			}
-
-			glm::vec2 dir = offset / distance;
-
-			glm::vec2 lineSloper = glm::vec2(-dir.y, dir.x) * lineWidth / 2.0f;
-
-			glm::vec2 p1 = vertices[vertices.size() - 1] + lineSloper;
-			glm::vec2 p2 = vertices[vertices.size() - 1] - lineSloper;
-
-			glm::vec2 p3 = vertices[0] + lineSloper;
-			glm::vec2 p4 = vertices[0] - lineSloper;
-
-			renderQuad(p1, p2, p3, p4, color, true, 1.0F, model);
-			return;
-		}
 		if (!Context::s_CurrentContext) return;
 
 		unsigned int vao;
@@ -650,21 +552,13 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLineLoop(const std::vector<glm::vec2>& vertices, Color3 color, float lineWidth, glm::mat4 model)
 	{
-		renderLineLoop(vertices, Color4(color, 1.0F), lineWidth, lineType, model);
+		renderLineLoop(vertices, Color4(color, 1.0F), lineWidth, model);
 	}
 
-	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color4 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color4 color, float lineWidth, glm::mat4 model)
 	{
-		if (lineType == LINE_ENDS_GOOD)
-		{
-			for (const std::array<glm::vec2, 2>& line : lines)
-			{
-				renderLine(line, color, lineWidth, LINE_ENDS_GOOD, model);
-			}
-			return;
-		}
 		if (!Context::s_CurrentContext) return;
 
 		unsigned int vao;
@@ -696,9 +590,9 @@ namespace DK
 		glDeleteBuffers(1, &vb);
 		glDeleteVertexArrays(1, &vao);
 	}
-	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color3 color, float lineWidth, unsigned char lineType, glm::mat4 model)
+	void renderLines(const std::vector<std::array<glm::vec2, 2>>& lines, Color3 color, float lineWidth, glm::mat4 model)
 	{
-		renderLines(lines, Color4(color, 1.0F), lineWidth, lineType, model);
+		renderLines(lines, Color4(color, 1.0F), lineWidth, model);
 	}
 
 	void renderCircle(glm::vec2 point, float radius, Color4 color, bool fill, float strokeWidth)
@@ -1028,7 +922,7 @@ namespace DK
 		}
 		else
 		{
-			renderLineLoop(vertices, color, strokeWidth, LINE_ENDS_BAD, model);
+			renderLineLoop(vertices, color, strokeWidth, model);
 		}
 	}
 	void renderRegularPoly(glm::vec2 point, float radius, unsigned int nSided, float startAngle, Color3 color, bool fill, float strokeWidth, glm::mat4 model)
@@ -1312,7 +1206,158 @@ namespace DK
 	{
 		renderPoly(poly, Color4(color, 1.0F), model);
 	}
+	void renderLine(const Line& line, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
 
+		if (!line.isInitialized() || line.needsUpdate())
+		{
+			if (!line.isInitialized())
+			{
+				glCreateVertexArrays(1, &line.m_VAO);
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+
+				glVertexArrayVertexBuffer(line.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribFormat(line.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glVertexArrayAttribBinding(line.m_VAO, 0, 0);
+				glEnableVertexArrayAttrib(line.m_VAO, 0);
+				line.m_VBOs.push_back(vb);
+
+				line.m_Initialized = true;
+			}
+
+			glNamedBufferData(line.m_VBOs[0], sizeof(float) * 4, line.get().data(), GL_STATIC_DRAW);
+			line.m_NeedsUpdate = false;
+		}
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glLineWidth(line.getLineWidth());
+		glBindVertexArray(line.m_VAO);
+		glDrawArrays(GL_LINES, 0, 2);
+	}
+	void renderLines(const Lines& lines, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!lines.isInitialized() || lines.needsUpdate())
+		{
+			if (!lines.isInitialized())
+			{
+				glCreateVertexArrays(1, &lines.m_VAO);
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+
+				glVertexArrayVertexBuffer(lines.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribFormat(lines.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glVertexArrayAttribBinding(lines.m_VAO, 0, 0);
+				glEnableVertexArrayAttrib(lines.m_VAO, 0);
+				lines.m_VBOs.push_back(vb);
+
+				lines.m_Initialized = true;
+			}
+
+			glNamedBufferData(lines.m_VBOs[0], sizeof(float) * lines.get().size() * 2u, lines.get().data(), GL_STATIC_DRAW);
+			lines.m_NeedsUpdate = false;
+		}
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glLineWidth(lines.getLineWidth());
+		glBindVertexArray(lines.m_VAO);
+		glDrawArrays(GL_LINES, 0, lines.get().size());
+	}
+	void renderLineStrip(const LineStrip& lineStrip, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!lineStrip.isInitialized() || lineStrip.needsUpdate())
+		{
+			if (!lineStrip.isInitialized())
+			{
+				glCreateVertexArrays(1, &lineStrip.m_VAO);
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+
+				glVertexArrayVertexBuffer(lineStrip.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribFormat(lineStrip.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glVertexArrayAttribBinding(lineStrip.m_VAO, 0, 0);
+				glEnableVertexArrayAttrib(lineStrip.m_VAO, 0);
+				lineStrip.m_VBOs.push_back(vb);
+
+				lineStrip.m_Initialized = true;
+			}
+
+			glNamedBufferData(lineStrip.m_VBOs[0], sizeof(float) * lineStrip.get().size() * 2u, lineStrip.get().data(), GL_STATIC_DRAW);
+
+		}
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glLineWidth(lineStrip.getLineWidth());
+		glBindVertexArray(lineStrip.m_VAO);
+		glDrawArrays(GL_LINE_STRIP, 0, lineStrip.get().size());
+	}
+	void renderLineLoop(const LineLoop& lineLoop, Color4 color, glm::mat4 model)
+	{
+		if (!Context::s_CurrentContext) return;
+
+		if (!lineLoop.isInitialized() || lineLoop.needsUpdate())
+		{
+			if (!lineLoop.isInitialized())
+			{
+				glCreateVertexArrays(1, &lineLoop.m_VAO);
+				unsigned int vb;
+				glCreateBuffers(1, &vb);
+
+				glVertexArrayVertexBuffer(lineLoop.m_VAO, 0, vb, 0, sizeof(float) * 2);
+				glVertexArrayAttribFormat(lineLoop.m_VAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+				glVertexArrayAttribBinding(lineLoop.m_VAO, 0, 0);
+				glEnableVertexArrayAttrib(lineLoop.m_VAO, 0);
+				lineLoop.m_VBOs.push_back(vb);
+
+				lineLoop.m_Initialized = true;
+			}
+
+			glNamedBufferData(lineLoop.m_VBOs[0], sizeof(float) * lineLoop.get().size() * 2u, lineLoop.get().data(), GL_STATIC_DRAW);
+
+		}
+		if (!Program::colorRenderer.isInitialized())
+		{
+			Program::colorRenderer.initialize(ROOT_DIR "/src/SPrograms/Color");
+		}
+
+		Program::colorRenderer.use();
+		Program::colorRenderer.uni4f("uColor", color);
+
+		Program::colorRenderer.uniMVP({ Context::s_CurrentContext->getProjectionMatrix(), glm::mat4(1.0F), model });
+
+		glLineWidth(lineLoop.getLineWidth());
+		glBindVertexArray(lineLoop.m_VAO);
+		glDrawArrays(GL_LINE_LOOP, 0, lineLoop.get().size());
+	}
 
 	void render(const Shape& shape, Color4 color, glm::mat4 model)
 	{
@@ -1320,6 +1365,36 @@ namespace DK
 		{
 		case Primitive::TRIANGLE:
 			renderTriangle(shape, color, model);
+			return;
+		case Primitive::TRIANGLES:
+			renderTriangles(shape, color, model);
+			return;
+		case Primitive::TRIANGLE_FAN:
+			renderTriangleFan(shape, color, model);
+			return;
+		case Primitive::QUAD:
+			renderQuad(shape, color, model);
+			return;
+		case Primitive::QUADS:
+			renderQuads(shape, color, model);
+			return;
+		case Primitive::POLYGON:
+			renderPoly(shape, color, model);
+			return;
+		case Primitive::LINE:
+			renderLine(shape, color, model);
+			return;
+		case Primitive::LINES:
+			renderLines(shape, color, model);
+			return;
+		case Primitive::LINE_STRIP:
+			renderLineStrip(shape, color, model);
+			return;
+		case Primitive::LINE_LOOP:
+			renderLineLoop(shape, color, model);
+			return;
+		default:
+			throw std::exception("Unknown shape found with no render definition!");
 		}
 	}
 } 
